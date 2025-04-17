@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/stock")
 @CrossOrigin(origins = "*")
 public class StockController {
-
+112121
   // 注入StockService
   private final StockService stockService;
 
