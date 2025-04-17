@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class StockController {
 112121
   // 注入StockService
+  哈哈哈哈哈
   private final StockService stockService;
 
   // 构造函数注入StockService
