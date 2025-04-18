@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,13 +28,11 @@ public class StockServiceImpl implements StockService {
   @Value("${stock.page.size}")
   private int pageSize;
 
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-
   @Override
   public StockResponse getAllData(String tsCode, String tradeDate, Integer pageNum) {
-    // 解析传入的日期
-    LocalDate targetDate = parseDate(tradeDate);
-    if (targetDate == null) {
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
       targetDate = stockDataMapper.findMaxDate();
     }
 
@@ -58,13 +54,13 @@ public class StockServiceImpl implements StockService {
     }
 
     // 从查询结果中获取实际的日期范围
-    LocalDate startDate = stockList.stream()
+    String startDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .min(LocalDate::compareTo)
+        .min(String::compareTo)
         .orElse(targetDate);
-    LocalDate endDate = stockList.stream()
+    String endDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .max(LocalDate::compareTo)
+        .max(String::compareTo)
         .orElse(targetDate);
 
     return buildResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate);
@@ -72,9 +68,9 @@ public class StockServiceImpl implements StockService {
 
   @Override
   public StockResponse getLimitUpData(String tsCode, String tradeDate, Integer pageNum) {
-    // 解析传入的日期
-    LocalDate targetDate = parseDate(tradeDate);
-    if (targetDate == null) {
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
       targetDate = stockDataMapper.findMaxDate();
     }
 
@@ -96,13 +92,13 @@ public class StockServiceImpl implements StockService {
     }
 
     // 显示使用日期范围的开始和结束日期（如果有数据）
-    LocalDate startDate = stockList.stream()
+    String startDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .min(LocalDate::compareTo)
+        .min(String::compareTo)
         .orElse(targetDate);
-    LocalDate endDate = stockList.stream()
+    String endDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .max(LocalDate::compareTo)
+        .max(String::compareTo)
         .orElse(targetDate);
 
     return buildLimitResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate);
@@ -110,9 +106,9 @@ public class StockServiceImpl implements StockService {
 
   @Override
   public StockResponse getLimitDownData(String tsCode, String tradeDate, Integer pageNum) {
-    // 解析传入的日期
-    LocalDate targetDate = parseDate(tradeDate);
-    if (targetDate == null) {
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
       targetDate = stockDataMapper.findMaxDate();
     }
 
@@ -134,13 +130,13 @@ public class StockServiceImpl implements StockService {
     }
 
     // 显示使用日期范围的开始和结束日期（如果有数据）
-    LocalDate startDate = stockList.stream()
+    String startDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .min(LocalDate::compareTo)
+        .min(String::compareTo)
         .orElse(targetDate);
-    LocalDate endDate = stockList.stream()
+    String endDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .max(LocalDate::compareTo)
+        .max(String::compareTo)
         .orElse(targetDate);
 
     return buildLimitResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate);
@@ -148,9 +144,9 @@ public class StockServiceImpl implements StockService {
 
   @Override
   public StockResponse getHalfYearLineData(String tsCode, String tradeDate, Integer pageNum) {
-    // 解析传入的日期
-    LocalDate targetDate = parseDate(tradeDate);
-    if (targetDate == null) {
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
       targetDate = stockDataMapper.findMaxDate();
     }
 
@@ -171,13 +167,13 @@ public class StockServiceImpl implements StockService {
     }
 
     // 从查询结果中获取实际的日期范围
-    LocalDate startDate = stockList.stream()
+    String startDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .min(LocalDate::compareTo)
+        .min(String::compareTo)
         .orElse(targetDate);
-    LocalDate endDate = stockList.stream()
+    String endDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .max(LocalDate::compareTo)
+        .max(String::compareTo)
         .orElse(targetDate);
 
     return buildMaResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate, "ma120");
@@ -185,9 +181,9 @@ public class StockServiceImpl implements StockService {
 
   @Override
   public StockResponse getYearLineData(String tsCode, String tradeDate, Integer pageNum) {
-    // 解析传入的日期
-    LocalDate targetDate = parseDate(tradeDate);
-    if (targetDate == null) {
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
       targetDate = stockDataMapper.findMaxDate();
     }
 
@@ -208,13 +204,13 @@ public class StockServiceImpl implements StockService {
     }
 
     // 从查询结果中获取实际的日期范围
-    LocalDate startDate = stockList.stream()
+    String startDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .min(LocalDate::compareTo)
+        .min(String::compareTo)
         .orElse(targetDate);
-    LocalDate endDate = stockList.stream()
+    String endDate = stockList.stream()
         .map(StockData::getTradeDate)
-        .max(LocalDate::compareTo)
+        .max(String::compareTo)
         .orElse(targetDate);
 
     return buildMaResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate, "ma250");
@@ -226,80 +222,60 @@ public class StockServiceImpl implements StockService {
    * @param tradeDate 交易日期
    * @return 日期范围
    */
-  private SimpleImmutableEntry<LocalDate, LocalDate> getDateRange(LocalDate tradeDate) {
-    LocalDate targetDate = tradeDate;
-    if (targetDate == null) {
-      targetDate = LocalDate.now();
-    }
-
-    // 确保目标日期不超过数据库中的最大日期
-    LocalDate maxDate = stockDataMapper.findMaxDate();
-    if (targetDate.isAfter(maxDate)) {
-      targetDate = maxDate;
+  private SimpleImmutableEntry<String, String> getDateRange(String tradeDate) {
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
+      targetDate = stockDataMapper.findMaxDate();
     }
 
     // 获取目标日期前后20个交易日的日期范围
-    LocalDate startDate = stockDataMapper.findPreviousNthTradeDate(targetDate, 20);
+    String startDate = stockDataMapper.findPreviousNthTradeDate(targetDate, 20);
     if (startDate == null) {
       startDate = stockDataMapper.findMinDate(); // 如果没有足够的交易日，则使用最早日期
     }
 
-    LocalDate endDate = stockDataMapper.findNextNthTradeDate(targetDate, 20);
+    String endDate = stockDataMapper.findNextNthTradeDate(targetDate, 20);
     if (endDate == null) {
-      endDate = maxDate; // 如果没有足够的交易日，则使用最晚日期
+      endDate = stockDataMapper.findMaxDate(); // 如果没有足够的交易日，则使用最晚日期
     }
 
     return new SimpleImmutableEntry<>(startDate, endDate);
   }
 
   /**
-   * 解析日期字符串为LocalDate
-   * 
-   * @param dateStr 日期字符串
-   * @return LocalDate对象，如果字符串为空则返回null
-   */
-  private LocalDate parseDate(String dateStr) {
-    if (dateStr == null || dateStr.isEmpty()) {
-      return null;
-    }
-    return LocalDate.parse(dateStr);
-  }
-
-  /**
    * 构建响应对象
    */
   private StockResponse buildResponse(List<StockData> stockDataList,
-      LocalDate startDate, LocalDate endDate,
+      String startDate, String endDate,
       int totalStocks, Integer pageNum, String tradeDateStr) {
     StockResponse response = new StockResponse();
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high",
-        "low", "close", "pre_close", "pct_chg", "vol", "amount",
-        "turnover_rate", "ma5", "ma10", "ma120", "ma250"));
+        "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
+        "ma5", "ma10", "ma120", "ma250"));
 
     // 设置查询日期
-    response.setDate(tradeDateStr != null ? tradeDateStr : LocalDate.now().toString());
+    response.setDate(tradeDateStr != null ? tradeDateStr : stockDataMapper.findMaxDate());
 
     // 设置分页信息
     int page = pageNum != null ? pageNum : 1;
     response.setPage(page);
 
     // 根据tradeDateStr获取基准日期
-    LocalDate baseDate = tradeDateStr != null ? parseDate(tradeDateStr) : LocalDate.now();
+    String baseDate = tradeDateStr != null && !tradeDateStr.isEmpty() ? tradeDateStr : stockDataMapper.findMaxDate();
 
     // 获取具有最大涨跌幅的股票编码及其涨跌幅值
     Map<String, Double> maxPctChgByStockOnDate = new HashMap<>();
 
     for (StockData stock : stockDataList) {
       String tsCode = stock.getTsCode();
-      LocalDate stockDate = stock.getTradeDate();
+      String stockDate = stock.getTradeDate();
 
       // 只考虑基准日期当天或最近的一天的涨跌幅
       if (!maxPctChgByStockOnDate.containsKey(tsCode) ||
-          Math.abs(stockDate.toEpochDay() - baseDate.toEpochDay()) < Math
-              .abs(getClosestDateForStock(stockDataList, tsCode, baseDate).toEpochDay() - baseDate.toEpochDay())) {
+          Math.abs(stockDate.compareTo(baseDate)) < Math
+              .abs(getClosestDateForStock(stockDataList, tsCode, baseDate).compareTo(baseDate))) {
         maxPctChgByStockOnDate.put(tsCode, stock.getPctChg().doubleValue());
       }
     }
@@ -343,11 +319,11 @@ public class StockServiceImpl implements StockService {
   /**
    * 获取某只股票在给定日期最近的交易日
    */
-  private LocalDate getClosestDateForStock(List<StockData> stockDataList, String tsCode, LocalDate targetDate) {
+  private String getClosestDateForStock(List<StockData> stockDataList, String tsCode, String targetDate) {
     return stockDataList.stream()
         .filter(stock -> stock.getTsCode().equals(tsCode))
         .map(StockData::getTradeDate)
-        .min(Comparator.comparing(date -> Math.abs(date.toEpochDay() - targetDate.toEpochDay())))
+        .min(Comparator.comparing(date -> Math.abs(date.compareTo(targetDate))))
         .orElse(targetDate);
   }
 
@@ -355,25 +331,24 @@ public class StockServiceImpl implements StockService {
    * 构建涨停/跌停响应对象
    */
   private StockResponse buildLimitResponse(List<StockData> stockDataList,
-      LocalDate startDate, LocalDate endDate,
+      String startDate, String endDate,
       int totalStocks, Integer pageNum, String tradeDateStr) {
     StockResponse response = new StockResponse();
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high",
-        "low", "close", "pre_close", "pct_chg", "vol", "amount",
-        "turnover_rate", "ma5", "ma10", "ma120", "ma250"));
+        "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
+        "ma5", "ma10", "ma120", "ma250"));
 
     // 设置查询日期
-    response.setDate(tradeDateStr != null ? tradeDateStr : LocalDate.now().toString());
+    response.setDate(tradeDateStr != null ? tradeDateStr : stockDataMapper.findMaxDate());
 
     // 设置分页信息
     int page = pageNum != null ? pageNum : 1;
     response.setPage(page);
 
     // 根据tradeDateStr获取基准日期
-    LocalDate baseDate = tradeDateStr != null ? parseDate(tradeDateStr) : stockDataMapper.findMaxDate();
+    String baseDate = tradeDateStr != null && !tradeDateStr.isEmpty() ? tradeDateStr : stockDataMapper.findMaxDate();
 
     // 将股票数据按照股票代码分组
     Map<String, List<StockResponse.StockData>> groupedDataByStock = stockDataList.stream()
@@ -410,35 +385,40 @@ public class StockServiceImpl implements StockService {
   }
 
   /**
-   * 构建均线响应对象
+   * 构建MA线响应对象
    */
   private StockResponse buildMaResponse(List<StockData> stockDataList,
-      LocalDate startDate, LocalDate endDate,
+      String startDate, String endDate,
       int totalStocks, Integer pageNum, String tradeDateStr, String maType) {
     StockResponse response = new StockResponse();
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high",
-        "low", "close", "pre_close", "pct_chg", "vol", "amount",
-        "turnover_rate", "ma5", "ma10", "ma120", "ma250"));
+        "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
+        "ma5", "ma10", "ma120", "ma250"));
 
     // 设置查询日期
-    response.setDate(tradeDateStr != null ? tradeDateStr : LocalDate.now().toString());
+    response.setDate(tradeDateStr != null ? tradeDateStr : stockDataMapper.findMaxDate());
 
     // 设置分页信息
     int page = pageNum != null ? pageNum : 1;
     response.setPage(page);
+
+    // 根据tradeDateStr获取基准日期
+    String baseDate = tradeDateStr != null && !tradeDateStr.isEmpty() ? tradeDateStr : stockDataMapper.findMaxDate();
 
     // 将股票数据按照股票代码分组
     Map<String, List<StockResponse.StockData>> groupedDataByStock = stockDataList.stream()
         .map(this::convertToDto)
         .collect(Collectors.groupingBy(StockResponse.StockData::getTsCode));
 
+    // 获取特定日期的数据用于排序（股票代码已在SQL中按大小排序）
+    List<String> sortedStockCodes = new ArrayList<>(groupedDataByStock.keySet());
+
     // 转换为grid_data格式：List<List<List<Object>>>
     List<List<List<Object>>> gridData = new ArrayList<>();
 
-    for (String tsCode : groupedDataByStock.keySet()) {
+    for (String tsCode : sortedStockCodes) {
       List<List<Object>> stockDataArray = new ArrayList<>();
 
       // 对同一只股票的数据按照日期升序排序
@@ -462,7 +442,7 @@ public class StockServiceImpl implements StockService {
   }
 
   /**
-   * 转换为DTO对象
+   * 将实体转换为DTO
    */
   private StockResponse.StockData convertToDto(StockData entity) {
     StockResponse.StockData dto = new StockResponse.StockData();
@@ -475,8 +455,8 @@ public class StockServiceImpl implements StockService {
     dto.setPreClose(entity.getPreClose());
     dto.setPctChg(entity.getPctChg());
     dto.setVol(entity.getVol());
+    dto.setBay(entity.getBay());
     dto.setAmount(entity.getAmount());
-    dto.setTurnoverRate(entity.getTurnoverRate());
     dto.setMa5(entity.getMa5());
     dto.setMa10(entity.getMa10());
     dto.setMa120(entity.getMa120());
@@ -487,17 +467,16 @@ public class StockServiceImpl implements StockService {
   /**
    * 构建空响应对象
    */
-  private StockResponse buildEmptyResponse(LocalDate targetDate, Integer pageNum, String tradeDateStr) {
+  private StockResponse buildEmptyResponse(String targetDate, Integer pageNum, String tradeDateStr) {
     StockResponse response = new StockResponse();
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high",
-        "low", "close", "pre_close", "pct_chg", "vol", "amount",
-        "turnover_rate", "ma5", "ma10", "ma120", "ma250"));
+        "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
+        "ma5", "ma10", "ma120", "ma250"));
 
     // 设置查询日期
-    response.setDate(tradeDateStr != null ? tradeDateStr : targetDate.toString());
+    response.setDate(tradeDateStr != null ? tradeDateStr : targetDate);
 
     // 设置分页信息
     int page = pageNum != null ? pageNum : 1;

@@ -4,8 +4,8 @@ const app = createApp({
   setup() {
     // 响应式数据
     const searchForm = reactive({
-      tsCode: '',
-      tradeDate: ''
+      ts_code: '',
+      trade_date: ''
     });
     const stockResponse = ref(null);
     const currentPage = ref(1);
@@ -44,9 +44,9 @@ const app = createApp({
     const loadData = async (url) => {
       try {
         const params = new URLSearchParams();
-        if (searchForm.tsCode) params.append('tsCode', searchForm.tsCode);
-        if (searchForm.tradeDate) params.append('tradeDate', searchForm.tradeDate);
-        params.append('pageNum', currentPage.value);
+        if (searchForm.ts_code) params.append('ts_code', searchForm.ts_code);
+        if (searchForm.trade_date) params.append('trade_date', searchForm.trade_date);
+        params.append('page', currentPage.value);
 
         const response = await fetch(`${url}?${params.toString()}`);
         if (!response.ok) {

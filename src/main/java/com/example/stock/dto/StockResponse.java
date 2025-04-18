@@ -1,7 +1,6 @@
 package com.example.stock.dto;
 
 import lombok.Data;
-import java.time.LocalDate;
 import java.util.List;
 import java.math.BigDecimal;
 
@@ -23,7 +22,7 @@ public class StockResponse {
     // 股票代码
     private String tsCode;
     // 交易日期
-    private LocalDate tradeDate;
+    private String tradeDate;
     // 开盘价
     private BigDecimal open;
     // 最高价
@@ -38,10 +37,10 @@ public class StockResponse {
     private BigDecimal pctChg;
     // 成交量
     private BigDecimal vol;
+    // Bay值
+    private BigDecimal bay;
     // 成交额
     private BigDecimal amount;
-    // 换手率
-    private BigDecimal turnoverRate;
     // 5日均线
     private BigDecimal ma5;
     // 10日均线
@@ -55,7 +54,7 @@ public class StockResponse {
     public Object[] toObjectArray() {
       return new Object[] {
           tsCode,
-          tradeDate.toString(),
+          tradeDate,
           open,
           high,
           low,
@@ -63,8 +62,7 @@ public class StockResponse {
           preClose,
           pctChg,
           vol,
-          amount,
-          turnoverRate,
+          bay,
           ma5,
           ma10,
           ma120,

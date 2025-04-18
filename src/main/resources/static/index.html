@@ -27,10 +27,10 @@
               </template>
               <el-form :inline="true" :model="searchForm" class="demo-form-inline">
                 <el-form-item label="股票代码">
-                  <el-input v-model="searchForm.tsCode" placeholder="股票代码"></el-input>
+                  <el-input v-model="searchForm.ts_code" placeholder="股票代码"></el-input>
                 </el-form-item>
                 <el-form-item label="日期">
-                  <el-date-picker v-model="searchForm.tradeDate" type="date" placeholder="选择日期" format="YYYY-MM-DD"
+                  <el-date-picker v-model="searchForm.trade_date" type="date" placeholder="选择日期" format="YYYY-MM-DD"
                     value-format="YYYY-MM-DD"></el-date-picker>
                 </el-form-item>
                 <el-form-item>

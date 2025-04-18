@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://25.tcp.cpolar.top:11324/postgres
+    url: jdbc:postgresql://25.tcp.cpolar.top:11324/stock
     username: postgres
     password: 123456
     driver-class-name: org.postgresql.Driver
