@@ -18,14 +18,14 @@
             FROM public.all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
-            LIMIT 21
+            LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
             FROM public.all_stocks_days
             WHERE trade_date >= #{startDate}
             ORDER BY trade_date ASC
-            LIMIT 21
+            LIMIT 41
         ),
         date_range AS (
             SELECT 
@@ -34,10 +34,9 @@
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
                a.amount, a.bay,
-               COALESCE(NULLIF(a.ma5, 'NaN'), NULL) as ma5, 
-               COALESCE(NULLIF(a.ma10, 'NaN'), NULL) as ma10, 
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
-               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN stock_codes s ON a.ts_code = s.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
@@ -63,14 +62,14 @@
             FROM public.all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
-            LIMIT 21
+            LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
             FROM public.all_stocks_days
             WHERE trade_date >= #{startDate}
             ORDER BY trade_date ASC
-            LIMIT 21
+            LIMIT 41
         ),
         date_range AS (
             SELECT 
@@ -79,10 +78,9 @@
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
                a.amount, a.bay,
-               COALESCE(NULLIF(a.ma5, 'NaN'), NULL) as ma5, 
-               COALESCE(NULLIF(a.ma10, 'NaN'), NULL) as ma10, 
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
-               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN limit_up_stocks l ON a.ts_code = l.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
@@ -108,14 +106,14 @@
             FROM public.all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
-            LIMIT 21
+            LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
             FROM public.all_stocks_days
             WHERE trade_date >= #{startDate}
             ORDER BY trade_date ASC
-            LIMIT 21
+            LIMIT 41
         ),
         date_range AS (
             SELECT 
@@ -124,10 +122,9 @@
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
                a.amount, a.bay,
-               COALESCE(NULLIF(a.ma5, 'NaN'), NULL) as ma5, 
-               COALESCE(NULLIF(a.ma10, 'NaN'), NULL) as ma10, 
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
-               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN limit_down_stocks l ON a.ts_code = l.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
@@ -224,14 +221,14 @@
             FROM public.all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
-            LIMIT 21
+            LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
             FROM public.all_stocks_days
             WHERE trade_date >= #{startDate}
             ORDER BY trade_date ASC
-            LIMIT 21
+            LIMIT 41
         ),
         date_range AS (
             SELECT 
@@ -240,10 +237,9 @@
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
                a.amount, a.bay,
-               COALESCE(NULLIF(a.ma5, 'NaN'), NULL) as ma5, 
-               COALESCE(NULLIF(a.ma10, 'NaN'), NULL) as ma10, 
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
-               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN half_year_stocks h ON a.ts_code = h.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
@@ -270,14 +266,14 @@
             FROM public.all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
-            LIMIT 21
+            LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
             FROM public.all_stocks_days
             WHERE trade_date >= #{startDate}
             ORDER BY trade_date ASC
-            LIMIT 21
+            LIMIT 41
         ),
         date_range AS (
             SELECT 
@@ -286,10 +282,9 @@
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
                a.amount, a.bay,
-               COALESCE(NULLIF(a.ma5, 'NaN'), NULL) as ma5, 
-               COALESCE(NULLIF(a.ma10, 'NaN'), NULL) as ma10, 
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
-               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN year_stocks y ON a.ts_code = y.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date

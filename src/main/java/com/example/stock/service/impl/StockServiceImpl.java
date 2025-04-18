@@ -32,6 +32,7 @@ public class StockServiceImpl implements StockService {
   public StockResponse getAllData(String tsCode, String tradeDate, Integer pageNum) {
     // 使用传入的日期或获取最新日期
     String targetDate = tradeDate;
+
     if (targetDate == null || targetDate.isEmpty()) {
       targetDate = stockDataMapper.findMaxDate();
     }
@@ -253,7 +254,7 @@ public class StockServiceImpl implements StockService {
     // 设置列名
     response.setColumn_names(Arrays.asList(
         "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
-        "ma5", "ma10", "ma120", "ma250"));
+        "ma120", "ma250", "name"));
 
     // 设置查询日期
     response.setDate(tradeDateStr != null ? tradeDateStr : stockDataMapper.findMaxDate());
@@ -338,7 +339,7 @@ public class StockServiceImpl implements StockService {
     // 设置列名
     response.setColumn_names(Arrays.asList(
         "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
-        "ma5", "ma10", "ma120", "ma250"));
+        "ma120", "ma250", "name"));
 
     // 设置查询日期
     response.setDate(tradeDateStr != null ? tradeDateStr : stockDataMapper.findMaxDate());
@@ -395,7 +396,7 @@ public class StockServiceImpl implements StockService {
     // 设置列名
     response.setColumn_names(Arrays.asList(
         "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
-        "ma5", "ma10", "ma120", "ma250"));
+        "ma120", "ma250", "name"));
 
     // 设置查询日期
     response.setDate(tradeDateStr != null ? tradeDateStr : stockDataMapper.findMaxDate());
@@ -457,35 +458,24 @@ public class StockServiceImpl implements StockService {
     dto.setVol(entity.getVol());
     dto.setBay(entity.getBay());
     dto.setAmount(entity.getAmount());
-    dto.setMa5(entity.getMa5());
-    dto.setMa10(entity.getMa10());
     dto.setMa120(entity.getMa120());
     dto.setMa250(entity.getMa250());
+    dto.setName(entity.getName());
     return dto;
   }
 
   /**
    * 构建空响应对象
    */
-  private StockResponse buildEmptyResponse(String targetDate, Integer pageNum, String tradeDateStr) {
+  private StockResponse buildEmptyResponse(String tradeDate, Integer pageNum, String tradeDateStr) {
     StockResponse response = new StockResponse();
-
-    // 设置列名
     response.setColumn_names(Arrays.asList(
         "ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "pct_chg", "vol", "bay",
-        "ma5", "ma10", "ma120", "ma250"));
-
-    // 设置查询日期
-    response.setDate(tradeDateStr != null ? tradeDateStr : targetDate);
-
-    // 设置分页信息
-    int page = pageNum != null ? pageNum : 1;
-    response.setPage(page);
-
-    // 设置空数据
-    response.setGrid_data(new ArrayList<>());
+        "ma120", "ma250", "name"));
+    response.setDate(tradeDateStr != null ? tradeDateStr : tradeDate);
+    response.setPage(pageNum != null ? pageNum : 1);
     response.setStock_count(0);
-
+    response.setGrid_data(new ArrayList<>());
     return response;
   }
 }

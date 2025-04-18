@@ -33,11 +33,13 @@ const app = createApp({
       return stockResponse.value.grid_data[index];
     };
 
-    // 获取指定股票代码
-    const getStockCodeByIndex = (index) => {
+    // 获取指定股票代码和名称
+    const getStockLabelByIndex = (index) => {
       const stockData = getStockDataByIndex(index);
       if (stockData.length === 0) return '';
-      return stockData[0][0]; // 第一条记录的第一个元素是股票代码
+      const tsCode = stockData[0][0]; // 第一条记录的第一个元素是股票代码
+      const name = stockData[0][12]; // 获取股票名称
+      return name ? `${name}(${tsCode})` : tsCode;
     };
 
     // 加载数据的方法
@@ -131,7 +133,7 @@ const app = createApp({
     // 转换数据为图表可用格式
     const prepareChartData = (stockIndex) => {
       const stockData = getStockDataByIndex(stockIndex);
-      if (!stockData || stockData.length === 0) return { dates: [], prices: [], volumes: [], ma5: [], ma10: [], ma: [] };
+      if (!stockData || stockData.length === 0) return { dates: [], prices: [], volumes: [], ma: [] };
 
       // 按日期排序
       const sortedData = [...stockData].sort((a, b) => new Date(a[1]) - new Date(b[1]));
@@ -140,18 +142,16 @@ const app = createApp({
       const dates = sortedData.map(item => item[1]); // trade_date
       const prices = sortedData.map(item => item[5]); // close
       const volumes = sortedData.map(item => item[8]); // vol
-      const ma5 = sortedData.map(item => item[11]); // ma5 在数组中的索引应为11
-      const ma10 = sortedData.map(item => item[12]); // ma10 在数组中的索引应为12
 
       // 提取均线数据（如果存在）
       let ma = [];
       if (currentDataType.value === 'halfYearLine') {
-        ma = sortedData.map(item => item[13]); // ma120 在数组中的索引应为13
+        ma = sortedData.map(item => item[9]); // ma120 在数组中的索引应为9
       } else if (currentDataType.value === 'yearLine') {
-        ma = sortedData.map(item => item[14]); // ma250 在数组中的索引应为14
+        ma = sortedData.map(item => item[10]); // ma250 在数组中的索引应为10
       }
 
-      return { dates, prices, volumes, ma5, ma10, ma };
+      return { dates, prices, volumes, ma };
     };
 
     // 渲染图表
@@ -165,7 +165,8 @@ const app = createApp({
 
       // 渲染当前激活标签页的图表
       const stockIndex = activeTab.value;
-      const tsCode = getStockCodeByIndex(stockIndex);
+      const tsCode = getStockLabelByIndex(stockIndex);
+      const stockName = getStockDataByIndex(stockIndex)[0][12]; // 获取股票名称
       const chartDom = document.getElementById(`chart-${stockIndex}`);
 
       if (!chartDom) return;
@@ -174,10 +175,10 @@ const app = createApp({
       chartInstances[stockIndex] = chart;
 
       // 准备数据
-      const { dates, prices, volumes, ma5, ma10, ma } = prepareChartData(stockIndex);
+      const { dates, prices, volumes, ma } = prepareChartData(stockIndex);
 
       // 基础图例数据
-      const legendData = ['股价', '成交量', 'MA5', 'MA10'];
+      const legendData = ['股价', '成交量'];
 
       // 根据数据类型添加对应的均线
       if (currentDataType.value === 'halfYearLine') {
@@ -189,7 +190,7 @@ const app = createApp({
       // 设置图表选项
       const option = {
         title: {
-          text: `${tsCode} 股价走势`,
+          text: `${stockName || tsCode} 股价走势`,
           left: 'center'
         },
         tooltip: {
@@ -259,65 +260,45 @@ const app = createApp({
             name: '股价',
             type: 'line',
             data: prices,
+            smooth: true,
             xAxisIndex: 0,
-            yAxisIndex: 0,
-            itemStyle: {
-              color: '#409EFF'
-            }
+            yAxisIndex: 0
           },
           {
             name: '成交量',
             type: 'bar',
             data: volumes,
             xAxisIndex: 1,
-            yAxisIndex: 1,
-            itemStyle: {
-              color: '#E6A23C'
-            }
-          },
-          {
-            name: 'MA5',
-            type: 'line',
-            data: ma5,
-            xAxisIndex: 0,
-            yAxisIndex: 0,
-            itemStyle: {
-              color: '#67C23A'
-            },
-            lineStyle: {
-              width: 1
-            }
-          },
-          {
-            name: 'MA10',
-            type: 'line',
-            data: ma10,
-            xAxisIndex: 0,
-            yAxisIndex: 0,
-            itemStyle: {
-              color: '#909399'
-            },
-            lineStyle: {
-              width: 1
-            }
+            yAxisIndex: 1
           }
         ]
       };
 
-      // 如果是半年线或年线数据，添加对应均线
-      if ((currentDataType.value === 'halfYearLine' || currentDataType.value === 'yearLine') && ma.length > 0) {
+      // 根据数据类型添加均线
+      if (currentDataType.value === 'halfYearLine' && ma.length > 0) {
         option.series.push({
-          name: currentDataType.value === 'halfYearLine' ? '半年线' : '年线',
+          name: '半年线',
           type: 'line',
           data: ma,
+          smooth: true,
           xAxisIndex: 0,
           yAxisIndex: 0,
-          itemStyle: {
-            color: '#F56C6C'
-          },
           lineStyle: {
-            type: 'dashed',
-            width: 2
+            width: 2,
+            type: 'dashed'
+          }
+        });
+      } else if (currentDataType.value === 'yearLine' && ma.length > 0) {
+        option.series.push({
+          name: '年线',
+          type: 'line',
+          data: ma,
+          smooth: true,
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          lineStyle: {
+            width: 2,
+            type: 'dashed'
           }
         });
       }
@@ -371,7 +352,7 @@ const app = createApp({
       loadYearLineData,
       handlePageChange,
       getStockDataByIndex,
-      getStockCodeByIndex,
+      getStockLabelByIndex,
       formatVolume,
       formatPercent
     };

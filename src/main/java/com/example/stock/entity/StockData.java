@@ -23,9 +23,8 @@ public class StockData {
   private BigDecimal vol;
   private BigDecimal amount;
   private BigDecimal bay;
-  private BigDecimal ma5; // 5日均线
-  private BigDecimal ma10; // 10日均线
   private BigDecimal ma120; // 半年线
   private BigDecimal ma250; // 年线
+  private String name; // 股票名称
   // 注意：没有添加 change, fmark 字段，因为当前业务逻辑中没有使用
 }

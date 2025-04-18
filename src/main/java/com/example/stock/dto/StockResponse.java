@@ -41,14 +41,12 @@ public class StockResponse {
     private BigDecimal bay;
     // 成交额
     private BigDecimal amount;
-    // 5日均线
-    private BigDecimal ma5;
-    // 10日均线
-    private BigDecimal ma10;
     // 半年线
     private BigDecimal ma120;
     // 年线
     private BigDecimal ma250;
+    // 股票名称
+    private String name;
 
     // 转换为Object数组，用于grid_data
     public Object[] toObjectArray() {
@@ -63,10 +61,9 @@ public class StockResponse {
           pctChg,
           vol,
           bay,
-          ma5,
-          ma10,
           ma120,
-          ma250
+          ma250,
+          name
       };
     }
   }
