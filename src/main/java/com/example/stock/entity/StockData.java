@@ -13,7 +13,7 @@ public class StockData {
   @TableId(type = IdType.AUTO)
   private Long id;
   private String tsCode;
-  private LocalDate tradeDate;
+  private String tradeDate; // 注意这里改为String类型，因为表结构中是varchar
   private BigDecimal open;
   private BigDecimal high;
   private BigDecimal low;
@@ -22,9 +22,9 @@ public class StockData {
   private BigDecimal pctChg;
   private BigDecimal vol;
   private BigDecimal amount;
-  private BigDecimal turnoverRate;
-  private BigDecimal ma5; // 5日均线
-  private BigDecimal ma10; // 10日均线
+  private BigDecimal bay;
   private BigDecimal ma120; // 半年线
   private BigDecimal ma250; // 年线
+  private String name; // 股票名称
+  // 注意：没有添加 change, fmark 字段，因为当前业务逻辑中没有使用
 }

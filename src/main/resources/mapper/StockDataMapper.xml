@@ -13,38 +13,33 @@
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
         ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date >= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
         date_range AS (
             SELECT 
-                COALESCE(
-                    (SELECT trade_date FROM (
-                        SELECT DISTINCT trade_date
-                        FROM public.all_stocks_days
-                        WHERE trade_date &lt; #{startDate}
-                        ORDER BY trade_date DESC
-                        LIMIT 20
-                    ) AS prev_dates
-                    ORDER BY trade_date ASC
-                    LIMIT 1),
-                    (SELECT MIN(trade_date) FROM public.all_stocks_days)
-                ) AS start_date,
-                COALESCE(
-                    (SELECT trade_date FROM (
-                        SELECT DISTINCT trade_date
-                        FROM public.all_stocks_days
-                        WHERE trade_date > #{startDate}
-                        ORDER BY trade_date ASC
-                        LIMIT 20
-                    ) AS next_dates
-                    ORDER BY trade_date DESC
-                    LIMIT 1),
-                    (SELECT MAX(trade_date) FROM public.all_stocks_days)
-                ) AS end_date
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
-               a.amount, a.turnover_rate, a.ma5, a.ma10, a.ma120, a.ma250
-        FROM public.all_stocks_days a, date_range d
-        WHERE a.ts_code IN (SELECT ts_code FROM stock_codes)
-          AND a.trade_date BETWEEN d.start_date AND d.end_date
+               a.amount, a.bay,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
+        FROM public.all_stocks_days a
+        JOIN stock_codes s ON a.ts_code = s.ts_code
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
 
@@ -61,38 +56,34 @@
             </where>
             ORDER BY a.pct_chg DESC
             LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date >= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
-               a.amount, a.turnover_rate, a.ma5, a.ma10, a.ma120, a.ma250
+               a.amount, a.bay,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN limit_up_stocks l ON a.ts_code = l.ts_code
-        WHERE a.trade_date BETWEEN (
-            SELECT COALESCE(
-                (SELECT trade_date FROM (
-                    SELECT DISTINCT trade_date
-                    FROM public.all_stocks_days
-                    WHERE trade_date &lt; #{startDate}
-                    ORDER BY trade_date DESC
-                    LIMIT 20
-                ) AS prev_dates
-                ORDER BY trade_date ASC
-                LIMIT 1),
-                (SELECT MIN(trade_date) FROM public.all_stocks_days)
-            )
-        ) AND (
-            SELECT COALESCE(
-                (SELECT trade_date FROM (
-                    SELECT DISTINCT trade_date
-                    FROM public.all_stocks_days
-                    WHERE trade_date > #{startDate}
-                    ORDER BY trade_date ASC
-                    LIMIT 20
-                ) AS next_dates
-                ORDER BY trade_date DESC
-                LIMIT 1),
-                (SELECT MAX(trade_date) FROM public.all_stocks_days)
-            )
-        )
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
 
@@ -109,55 +100,51 @@
             </where>
             ORDER BY a.pct_chg ASC
             LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date >= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
-               a.amount, a.turnover_rate, a.ma5, a.ma10, a.ma120, a.ma250
+               a.amount, a.bay,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN limit_down_stocks l ON a.ts_code = l.ts_code
-        WHERE a.trade_date BETWEEN (
-            SELECT COALESCE(
-                (SELECT trade_date FROM (
-                    SELECT DISTINCT trade_date
-                    FROM public.all_stocks_days
-                    WHERE trade_date &lt; #{startDate}
-                    ORDER BY trade_date DESC
-                    LIMIT 20
-                ) AS prev_dates
-                ORDER BY trade_date ASC
-                LIMIT 1),
-                (SELECT MIN(trade_date) FROM public.all_stocks_days)
-            )
-        ) AND (
-            SELECT COALESCE(
-                (SELECT trade_date FROM (
-                    SELECT DISTINCT trade_date
-                    FROM public.all_stocks_days
-                    WHERE trade_date > #{startDate}
-                    ORDER BY trade_date ASC
-                    LIMIT 20
-                ) AS next_dates
-                ORDER BY trade_date DESC
-                LIMIT 1),
-                (SELECT MAX(trade_date) FROM public.all_stocks_days)
-            )
-        )
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
 
     <!-- 查询最小日期 -->
-    <select id="findMinDate" resultType="java.time.LocalDate">
+    <select id="findMinDate" resultType="java.lang.String">
         SELECT MIN(trade_date)
         FROM public.all_stocks_days
     </select>
 
     <!-- 查询最大日期 -->
-    <select id="findMaxDate" resultType="java.time.LocalDate">
+    <select id="findMaxDate" resultType="java.lang.String">
         SELECT MAX(trade_date)
         FROM public.all_stocks_days
     </select>
 
     <!-- 查询下一个第n个交易日 -->
-    <select id="findNextNthTradeDate" resultType="java.time.LocalDate">
+    <select id="findNextNthTradeDate" resultType="java.lang.String">
         SELECT trade_date
         FROM (
             SELECT DISTINCT trade_date
@@ -171,7 +158,7 @@
     </select>
 
     <!-- 查询上一个第n个交易日 -->
-    <select id="findPreviousNthTradeDate" resultType="java.time.LocalDate">
+    <select id="findPreviousNthTradeDate" resultType="java.lang.String">
         SELECT trade_date
         FROM (
             SELECT DISTINCT trade_date
@@ -217,45 +204,42 @@
     <!-- 查询半年线股票数据 -->
     <select id="findHalfYearLine" resultType="com.example.stock.entity.StockData">
         WITH half_year_stocks AS (
-            SELECT a.ts_code
+            SELECT DISTINCT a.ts_code
             FROM public.all_stocks_days a
-            WHERE a.trade_date = #{startDate}
-            AND a.close > a.ma120
-            <if test="tsCode != null">
-                AND a.ts_code = #{tsCode}
-            </if>
+            <where>
+                <if test="tsCode != null">
+                    a.ts_code = #{tsCode} AND
+                </if>
+                a.trade_date = #{startDate}
+                AND a.close > COALESCE(NULLIF(a.ma120, 'NaN'), 0)
+            </where>
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
         ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date >= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
         date_range AS (
             SELECT 
-                COALESCE(
-                    (SELECT trade_date FROM (
-                        SELECT DISTINCT trade_date
-                        FROM public.all_stocks_days
-                        WHERE trade_date &lt; #{startDate}
-                        ORDER BY trade_date DESC
-                        LIMIT 250
-                    ) AS prev_dates
-                    ORDER BY trade_date ASC
-                    LIMIT 1),
-                    (SELECT MIN(trade_date) FROM public.all_stocks_days)
-                ) AS start_date,
-                COALESCE(
-                    (SELECT trade_date FROM (
-                        SELECT DISTINCT trade_date
-                        FROM public.all_stocks_days
-                        WHERE trade_date > #{startDate}
-                        ORDER BY trade_date ASC
-                        LIMIT 250
-                    ) AS next_dates
-                    ORDER BY trade_date DESC
-                    LIMIT 1),
-                    (SELECT MAX(trade_date) FROM public.all_stocks_days)
-                ) AS end_date
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
-               a.amount, a.turnover_rate, a.ma5, a.ma10, a.ma120, a.ma250
+               a.amount, a.bay,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
         JOIN half_year_stocks h ON a.ts_code = h.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
@@ -265,47 +249,44 @@
     <!-- 查询年线股票数据 -->
     <select id="findYearLine" resultType="com.example.stock.entity.StockData">
         WITH year_stocks AS (
-            SELECT a.ts_code
+            SELECT DISTINCT a.ts_code
             FROM public.all_stocks_days a
-            WHERE a.trade_date = #{startDate}
-            AND a.close > a.ma250
-            <if test="tsCode != null">
-                AND a.ts_code = #{tsCode}
-            </if>
+            <where>
+                <if test="tsCode != null">
+                    a.ts_code = #{tsCode} AND
+                </if>
+                a.trade_date = #{startDate}
+                AND a.close > COALESCE(NULLIF(a.ma250, 'NaN'), 0)
+            </where>
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
         ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM public.all_stocks_days
+            WHERE trade_date >= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
         date_range AS (
             SELECT 
-                COALESCE(
-                    (SELECT trade_date FROM (
-                        SELECT DISTINCT trade_date
-                        FROM public.all_stocks_days
-                        WHERE trade_date &lt; #{startDate}
-                        ORDER BY trade_date DESC
-                        LIMIT 750
-                    ) AS prev_dates
-                    ORDER BY trade_date ASC
-                    LIMIT 1),
-                    (SELECT MIN(trade_date) FROM public.all_stocks_days)
-                ) AS start_date,
-                COALESCE(
-                    (SELECT trade_date FROM (
-                        SELECT DISTINCT trade_date
-                        FROM public.all_stocks_days
-                        WHERE trade_date > #{startDate}
-                        ORDER BY trade_date ASC
-                        LIMIT 750
-                    ) AS next_dates
-                    ORDER BY trade_date DESC
-                    LIMIT 1),
-                    (SELECT MAX(trade_date) FROM public.all_stocks_days)
-                ) AS end_date
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pre_close, a.pct_chg, a.vol, 
-               a.amount, a.turnover_rate, a.ma5, a.ma10, a.ma120, a.ma250
+               a.amount, a.bay,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
         FROM public.all_stocks_days a
-        JOIN year_stocks h ON a.ts_code = h.ts_code
+        JOIN year_stocks y ON a.ts_code = y.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
@@ -315,10 +296,10 @@
         SELECT COUNT(DISTINCT a.ts_code)
         FROM public.all_stocks_days a
         WHERE a.trade_date = #{startDate}
-        AND a.close > a.ma120
         <if test="tsCode != null">
             AND a.ts_code = #{tsCode}
         </if>
+        AND a.close > COALESCE(NULLIF(a.ma120, 'NaN'), 0)
     </select>
 
     <!-- 查询年线股票数量 -->
@@ -326,10 +307,10 @@
         SELECT COUNT(DISTINCT a.ts_code)
         FROM public.all_stocks_days a
         WHERE a.trade_date = #{startDate}
-        AND a.close > a.ma250
         <if test="tsCode != null">
             AND a.ts_code = #{tsCode}
         </if>
+        AND a.close > COALESCE(NULLIF(a.ma250, 'NaN'), 0)
     </select>
 
 </mapper> 
