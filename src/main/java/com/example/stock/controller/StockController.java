@@ -15,8 +15,9 @@ import java.util.Map;
 @RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class StockController {
-
+112121
   // 注入StockService
+  哈哈哈哈哈
   private final StockService stockService;
 
   // 构造函数注入StockService
