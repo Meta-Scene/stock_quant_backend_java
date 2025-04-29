@@ -2,7 +2,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-family: Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f5f7fa;
@@ -11,23 +11,19 @@ body {
 /* 布局样式 */
 .el-header {
   background-color: #409EFF;
-  color: #fff;
-  padding: 15px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  color: white;
+  text-align: center;
+  line-height: 60px;
 }
 
 .el-footer {
-  padding: 20px;
+  background-color: #f5f5f5;
   text-align: center;
-  color: #909399;
-  font-size: 14px;
-  border-top: 1px solid #e6e6e6;
-  margin-top: 20px;
+  line-height: 60px;
 }
 
 .el-main {
   padding: 20px;
-  min-height: calc(100vh - 150px);
 }
 
 /* 卡片样式 */
@@ -45,13 +41,14 @@ body {
 
 /* 表格样式 */
 .chart-container {
-  height: 400px;
-  margin-bottom: 20px;
+  width: 100%;
+  height: 600px;
 }
 
 .pagination-container {
-  text-align: center;
-  margin: 15px 0;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
 }
 
 /* 数据展示样式 */
@@ -60,13 +57,11 @@ body {
 }
 
 .positive {
-  color: #67C23A;
-  font-weight: bold;
+  color: #F56C6C;
 }
 
 .negative {
-  color: #F56C6C;
-  font-weight: bold;
+  color: #67C23A;
 }
 
 .clearfix:after {
@@ -84,4 +79,14 @@ body {
   .el-table {
     max-height: 300px;
   }
+}
+
+.slope-info {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.slope-info .el-tag {
+  padding: 10px 20px;
+  font-size: 16px;
 }

@@ -31,8 +31,6 @@ public class StockResponse {
     private BigDecimal low;
     // 收盘价
     private BigDecimal close;
-    // 前收盘价
-    private BigDecimal preClose;
     // 涨跌额
     private BigDecimal pctChg;
     // 成交量
@@ -57,7 +55,6 @@ public class StockResponse {
           high,
           low,
           close,
-          preClose,
           pctChg,
           vol,
           bay,

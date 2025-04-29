@@ -2,6 +2,7 @@ package com.example.stock.service;
 
 import org.springframework.stereotype.Service;
 
+import com.example.stock.dto.FiveDayAdjustmentResponse;
 import com.example.stock.dto.StockResponse;
 
 /**
@@ -59,4 +60,54 @@ public interface StockService {
    * @return 股票数据响应
    */
   StockResponse getYearLineData(String tsCode, String tradeDate, Integer pageNum);
+
+  /**
+   * 查询强于大盘数据
+   * 
+   * @param tsCode
+   * @param tradeDate
+   * @param pageNum
+   * @return
+   */
+  StockResponse getOutperformData(String tsCode, String tradeDate, Integer pageNum);
+
+  /**
+   * 获取弱于大盘的股票数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 股票数据响应
+   */
+  StockResponse getUnderperformData(String tsCode, String tradeDate, Integer pageNum);
+
+  /**
+   * 获取指定日期和股票的斜率数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @return 斜率值
+   */
+  double getStockSlope(String tsCode, String tradeDate);
+
+  /**
+   * 获取指定日期的市场(大盘)斜率
+   * 
+   * @param tradeDate 交易日期
+   * @return 市场斜率值
+   */
+  double getMarketSlope(String tradeDate);
+
+  /**
+   * 获取五日调整分析数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 五日调整分析数据响应
+   */
+  FiveDayAdjustmentResponse getFiveDayAdjustment(String tsCode, String tradeDate, Integer pageNum);
+
+
+  StockResponse getSingleStockData(String tsCode);
 }

@@ -1,9 +1,9 @@
 server:
-  port: 8080
+  port: 10017
 
 spring:
   datasource:
-    url: jdbc:postgresql://25.tcp.cpolar.top:11324/stock
+    url: jdbc:postgresql://120.27.208.55:10016/stock
     username: postgres
     password: 123456
     driver-class-name: org.postgresql.Driver

@@ -18,7 +18,6 @@ public class StockData {
   private BigDecimal high;
   private BigDecimal low;
   private BigDecimal close;
-  private BigDecimal preClose;
   private BigDecimal pctChg;
   private BigDecimal vol;
   private BigDecimal amount;
