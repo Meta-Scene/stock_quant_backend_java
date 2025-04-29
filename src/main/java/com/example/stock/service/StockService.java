@@ -1,5 +1,6 @@
 package com.example.stock.service;
 
+import com.example.stock.dto.SingleStockResponse;
 import org.springframework.stereotype.Service;
 
 import com.example.stock.dto.FiveDayAdjustmentResponse;
@@ -108,6 +109,10 @@ public interface StockService {
    */
   FiveDayAdjustmentResponse getFiveDayAdjustment(String tsCode, String tradeDate, Integer pageNum);
 
-
-  StockResponse getSingleStockData(String tsCode);
+  /**
+   * 获取单只股票数据
+   * @param tsCode
+   * @return
+   */
+  SingleStockResponse getSingleStockData(String tsCode);
 }

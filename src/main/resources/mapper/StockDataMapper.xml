@@ -619,4 +619,24 @@
             AND a.bay > 0 -- 使用bay字段大于0作为买入点判断
         </where>
     </select>
+    <select id="getSingleStockData" resultType="com.example.stock.entity.StockData">
+        SELECT 
+            id,
+            ts_code,
+            trade_date,
+            open,
+            high,
+            low,
+            close,
+            pct_chg,
+            vol,
+            amount,
+            bay,
+            COALESCE(NULLIF(ma120, 'NaN'), NULL) as ma120,
+            COALESCE(NULLIF(ma250, 'NaN'), NULL) as ma250,
+            name
+        FROM all_stocks_days
+        WHERE ts_code = #{tsCode}
+        ORDER BY trade_date ASC
+    </select>
 </mapper> 

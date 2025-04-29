@@ -3,6 +3,7 @@ package com.example.stock.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.stock.dto.FiveDayAdjustmentResponse;
+import com.example.stock.dto.SingleStockResponse;
 import com.example.stock.dto.StockResponse;
 import com.example.stock.entity.StockData;
 import com.example.stock.mapper.StockDataMapper;
@@ -386,6 +387,71 @@ public class StockServiceImpl implements StockService {
     }
 
     // 设置响应数据
+    response.setGrid_data(gridData);
+
+    return response;
+  }
+
+  @Override
+  public SingleStockResponse getSingleStockData(String tsCode) {
+    if (tsCode == null || tsCode.trim().isEmpty()) {
+      return null;
+    }
+
+    // 查询单只股票的所有时间数据
+    List<StockData> stockDataList = stockDataMapper.getSingleStockData(tsCode);
+
+    if (stockDataList.isEmpty()) {
+      return null;
+    }
+
+    SingleStockResponse response = new SingleStockResponse();
+
+    // 设置列名
+    response.setColumn_names(Arrays.asList(
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "Fmark", "bay",
+        "ma120", "ma250", "name"));
+
+    // 创建grid_data
+    List<List<Object>> gridData = new ArrayList<>();
+
+    // 将每条股票数据转换为Object数组
+    for (StockData stockData : stockDataList) {
+      // 处理Fmark逻辑
+      BigDecimal fmarkValue;
+      if (stockData.getAmount() != null) {
+        // 获取Fmark值
+        BigDecimal fmark = stockData.getAmount();
+
+        // 根据Fmark值处理
+        if (fmark.compareTo(BigDecimal.ZERO) == 0) {
+          fmarkValue = stockData.getHigh(); // 如果Fmark=0，返回当日high
+        } else if (fmark.compareTo(BigDecimal.ONE) == 0) {
+          fmarkValue = stockData.getLow(); // 如果Fmark=1，返回当日low
+        } else {
+          fmarkValue = BigDecimal.ZERO; // 否则返回0
+        }
+      } else {
+        fmarkValue = BigDecimal.ZERO; // 如果Fmark为null，返回0
+      }
+
+      List<Object> rowData = Arrays.asList(
+          stockData.getTsCode(),
+          stockData.getTradeDate(),
+          stockData.getOpen(),
+          stockData.getHigh(),
+          stockData.getLow(),
+          stockData.getClose(),
+          stockData.getPctChg(),
+          stockData.getVol(),
+          fmarkValue, // 添加处理后的Fmark值
+          stockData.getBay(),
+          stockData.getMa120(),
+          stockData.getMa250(),
+          stockData.getName());
+      gridData.add(rowData);
+    }
+
     response.setGrid_data(gridData);
 
     return response;

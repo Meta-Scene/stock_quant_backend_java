@@ -1,6 +1,7 @@
 package com.example.stock.controller;
 
 import com.example.stock.dto.FiveDayAdjustmentResponse;
+import com.example.stock.dto.SingleStockResponse;
 import com.example.stock.dto.StockResponse;
 import com.example.stock.service.StockService;
 import io.swagger.annotations.Api;
@@ -15,9 +16,9 @@ import java.util.Map;
 @RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class StockController {
-112121
+
   // 注入StockService
-  哈哈哈哈哈
+
   private final StockService stockService;
 
   // 构造函数注入StockService
@@ -58,8 +59,8 @@ public class StockController {
   /**
    * 获取指定日期和股票的斜率数据
    * 
-   * @param tsCode    股票代码
-   * @param tradeDate 交易日期
+   * @param ts_code    股票代码
+   * @param trade_date 交易日期
    * @return 斜率数据
    */
   @GetMapping("/slope")
@@ -106,7 +107,7 @@ public class StockController {
 
   @ApiOperation("查询单只股票数据")
   @GetMapping("stock_single_data")
-  public StockResponse getSingleStockData(@RequestParam(name = "ts_code") String tsCode){
+  public SingleStockResponse getSingleStockData(@RequestParam(name = "ts_code") String tsCode){
       return stockService.getSingleStockData(tsCode);
   }
 

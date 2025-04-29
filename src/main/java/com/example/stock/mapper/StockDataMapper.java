@@ -253,4 +253,7 @@ public interface StockDataMapper extends BaseMapper<StockData> {
    * @return 有买点的五日调整股票数量
    */
   Long countFiveDayAdjustmentStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
+
+
+  List<StockData> getSingleStockData(String tsCode);
 }

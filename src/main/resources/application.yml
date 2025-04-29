@@ -1,19 +1,19 @@
 server:
-  port: 10017
+  port: 10002
 
 spring:
   datasource:
-    url: jdbc:postgresql://120.27.208.55:10016/stock
-    username: postgres
-    password: 123456
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:mysql://120.27.208.55:10001/stock?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+    username: root
+    password: YIJINGKEJI1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
   cache:
     type: simple
@@ -44,7 +44,7 @@ mybatis:
 
 # PageHelper 分页配置
 pagehelper:
-  helper-dialect: postgresql
+  helper-dialect: mysql
   reasonable: true
   support-methods-arguments: true
   params: count=countSql
