@@ -412,29 +412,37 @@ public class StockServiceImpl implements StockService {
         "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "Fmark", "bay",
         "ma120", "ma250", "name"));
 
-    // 创建grid_data
-    List<List<Object>> gridData = new ArrayList<>();
+    // 创建外层List
+    List<List<List<Object>>> gridData = new ArrayList<>();
+
+    // 创建中层List (每只股票一个List)
+    List<List<Object>> stockDataArray = new ArrayList<>();
 
     // 将每条股票数据转换为Object数组
     for (StockData stockData : stockDataList) {
-      // 处理Fmark逻辑
-      BigDecimal fmarkValue;
-      if (stockData.getAmount() != null) {
-        // 获取Fmark值
-        BigDecimal fmark = stockData.getAmount();
-
-        // 根据Fmark值处理
-        if (fmark.compareTo(BigDecimal.ZERO) == 0) {
-          fmarkValue = stockData.getHigh(); // 如果Fmark=0，返回当日high
-        } else if (fmark.compareTo(BigDecimal.ONE) == 0) {
-          fmarkValue = stockData.getLow(); // 如果Fmark=1，返回当日low
+      // 根据Fmark值进行处理
+      Object fmarkValue;
+      if (stockData.getFmark() != null) {
+        Integer fmark = stockData.getFmark();
+        if (fmark == 0) {
+          // 如果Fmark=0，返回当日high
+          fmarkValue = stockData.getHigh();
+        } else if (fmark == 1) {
+          // 如果Fmark=1，返回当日low
+          fmarkValue = stockData.getLow();
+        } else if (fmark == 2 || fmark == 3) {
+          // 如果Fmark=2或3，返回0
+          fmarkValue = BigDecimal.ZERO;
         } else {
-          fmarkValue = BigDecimal.ZERO; // 否则返回0
+          // 其他值保持不变
+          fmarkValue = stockData.getFmark();
         }
       } else {
-        fmarkValue = BigDecimal.ZERO; // 如果Fmark为null，返回0
+        // Fmark为null时返回0
+        fmarkValue = BigDecimal.ZERO;
       }
 
+      // 创建内层List (每行数据)
       List<Object> rowData = Arrays.asList(
           stockData.getTsCode(),
           stockData.getTradeDate(),
@@ -444,13 +452,18 @@ public class StockServiceImpl implements StockService {
           stockData.getClose(),
           stockData.getPctChg(),
           stockData.getVol(),
-          fmarkValue, // 添加处理后的Fmark值
+          fmarkValue, // 处理后的Fmark值
           stockData.getBay(),
           stockData.getMa120(),
           stockData.getMa250(),
           stockData.getName());
-      gridData.add(rowData);
+
+      // 添加到中层List
+      stockDataArray.add(rowData);
     }
+
+    // 将中层List添加到外层List
+    gridData.add(stockDataArray);
 
     response.setGrid_data(gridData);
 

@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
-@TableName("public.all_stocks_days")
+@TableName("all_stocks_days")
 public class StockData {
   @TableId(type = IdType.AUTO)
   private Long id;
@@ -22,6 +22,7 @@ public class StockData {
   private BigDecimal vol;
   private BigDecimal amount;
   private BigDecimal bay;
+  private Integer Fmark; // Fmark字段
   private BigDecimal ma120; // 半年线
   private BigDecimal ma250; // 年线
   private String name; // 股票名称

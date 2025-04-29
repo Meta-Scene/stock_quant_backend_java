@@ -106,7 +106,7 @@ public class StockController {
   }
 
   @ApiOperation("查询单只股票数据")
-  @GetMapping("stock_single_data")
+  @GetMapping("/stock_single_data")
   public SingleStockResponse getSingleStockData(@RequestParam(name = "ts_code") String tsCode){
       return stockService.getSingleStockData(tsCode);
   }

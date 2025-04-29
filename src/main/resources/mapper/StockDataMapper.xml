@@ -13,7 +13,7 @@
     <select id="findByDateRange" resultType="com.example.stock.entity.StockData">
         WITH stock_codes AS (
             SELECT DISTINCT a.ts_code
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             WHERE a.trade_date = #{startDate}
             <if test="tsCode != null">
                 AND a.ts_code = #{tsCode}
@@ -23,14 +23,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -45,7 +45,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN stock_codes s ON a.ts_code = s.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -63,7 +63,7 @@
     <select id="findLimitUp" resultType="com.example.stock.entity.StockData">
         WITH limit_up_stocks AS (
             SELECT DISTINCT a.ts_code, a.pct_chg
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             <where>
                 <if test="tsCode != null">
                     a.ts_code = #{tsCode} AND
@@ -75,14 +75,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -97,7 +97,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN limit_up_stocks l ON a.ts_code = l.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -115,7 +115,7 @@
     <select id="findLimitDown" resultType="com.example.stock.entity.StockData">
         WITH limit_down_stocks AS (
             SELECT DISTINCT a.ts_code, a.pct_chg
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             <where>
                 <if test="tsCode != null">
                     a.ts_code = #{tsCode} AND
@@ -127,14 +127,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -149,7 +149,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN limit_down_stocks l ON a.ts_code = l.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -158,13 +158,13 @@
     <!-- 获取数据库中的最早交易日期 -->
     <select id="findMinDate" resultType="java.lang.String">
         SELECT MIN(trade_date)
-        FROM public.all_stocks_days
+        FROM all_stocks_days
     </select>
 
     <!-- 获取数据库中的最新交易日期 -->
     <select id="findMaxDate" resultType="java.lang.String">
         SELECT MAX(trade_date)
-        FROM public.all_stocks_days
+        FROM all_stocks_days
     </select>
 
     <!-- 
@@ -175,7 +175,7 @@
         SELECT trade_date
         FROM (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt; #{date}
             ORDER BY trade_date ASC
             LIMIT #{n}
@@ -192,7 +192,7 @@
         SELECT trade_date
         FROM (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt; #{date}
             ORDER BY trade_date DESC
             LIMIT #{n}
@@ -211,7 +211,7 @@
     <select id="countStocks" resultType="java.lang.Long">
         <if test="isLimitUp != null and isLimitUp">
             SELECT COUNT(DISTINCT a.ts_code)
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             WHERE a.trade_date = #{startDate}
             <if test="tsCode != null">
                 AND a.ts_code = #{tsCode}
@@ -220,7 +220,7 @@
         </if>
         <if test="isLimitDown != null and isLimitDown">
             SELECT COUNT(DISTINCT a.ts_code)
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             WHERE a.trade_date = #{startDate}
             <if test="tsCode != null">
                 AND a.ts_code = #{tsCode}
@@ -229,7 +229,7 @@
         </if>
         <if test="isLimitUp == null and isLimitDown == null">
             SELECT COUNT(DISTINCT a.ts_code)
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             WHERE a.trade_date = #{startDate}
             <if test="tsCode != null">
                 AND a.ts_code = #{tsCode}
@@ -247,7 +247,7 @@
     <select id="findHalfYearLine" resultType="com.example.stock.entity.StockData">
         WITH half_year_stocks AS (
             SELECT DISTINCT a.ts_code
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             <where>
             <if test="tsCode != null">
                     a.ts_code = #{tsCode} AND
@@ -260,14 +260,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -282,7 +282,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN half_year_stocks h ON a.ts_code = h.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -298,7 +298,7 @@
     <select id="findYearLine" resultType="com.example.stock.entity.StockData">
         WITH year_stocks AS (
             SELECT DISTINCT a.ts_code
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             <where>
             <if test="tsCode != null">
                     a.ts_code = #{tsCode} AND
@@ -311,14 +311,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -333,7 +333,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN year_stocks y ON a.ts_code = y.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -345,7 +345,7 @@
      -->
     <select id="countHalfYearLineStocks" resultType="java.lang.Long">
         SELECT COUNT(DISTINCT a.ts_code)
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         WHERE a.trade_date = #{startDate}
         <if test="tsCode != null">
             AND a.ts_code = #{tsCode}
@@ -359,7 +359,7 @@
      -->
     <select id="countYearLineStocks" resultType="java.lang.Long">
         SELECT COUNT(DISTINCT a.ts_code)
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         WHERE a.trade_date = #{startDate}
         <if test="tsCode != null">
             AND a.ts_code = #{tsCode}
@@ -378,9 +378,9 @@
     <select id="findOutperformData" resultType="com.example.stock.entity.StockData">
         WITH outperform_stocks AS (
             SELECT DISTINCT a.ts_code
-            FROM public.all_stocks_days a
-            JOIN public.stock_slope ss ON a.id = ss.id_all_stocks_days
-            JOIN public.shangzheng sz ON a.trade_date = sz.trade_date
+            FROM all_stocks_days a
+            JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
+            JOIN shangzheng sz ON a.trade_date = sz.trade_date
             <where>
                 <if test="tsCode != null">
                     a.ts_code = #{tsCode} AND
@@ -393,14 +393,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -415,7 +415,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN outperform_stocks o ON a.ts_code = o.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -427,9 +427,9 @@
      -->
     <select id="countOutperformStocks" resultType="java.lang.Long">
         SELECT COUNT(DISTINCT a.ts_code)
-        FROM public.all_stocks_days a
-        JOIN public.stock_slope ss ON a.id = ss.id_all_stocks_days
-        JOIN public.shangzheng sz ON a.trade_date = sz.trade_date
+        FROM all_stocks_days a
+        JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
+        JOIN shangzheng sz ON a.trade_date = sz.trade_date
         WHERE a.trade_date = #{startDate}
         <if test="tsCode != null">
             AND a.ts_code = #{tsCode}
@@ -448,9 +448,9 @@
     <select id="findUnderperformData" resultType="com.example.stock.entity.StockData">
         WITH underperform_stocks AS (
             SELECT DISTINCT a.ts_code
-            FROM public.all_stocks_days a
-            JOIN public.stock_slope ss ON a.id = ss.id_all_stocks_days
-            JOIN public.shangzheng sz ON a.trade_date = sz.trade_date
+            FROM all_stocks_days a
+            JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
+            JOIN shangzheng sz ON a.trade_date = sz.trade_date
             <where>
                 <if test="tsCode != null">
                     a.ts_code = #{tsCode} AND
@@ -463,14 +463,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -485,7 +485,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN underperform_stocks u ON a.ts_code = u.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -497,9 +497,9 @@
      -->
     <select id="countUnderperformStocks" resultType="java.lang.Long">
         SELECT COUNT(DISTINCT a.ts_code)
-        FROM public.all_stocks_days a
-        JOIN public.stock_slope ss ON a.id = ss.id_all_stocks_days
-        JOIN public.shangzheng sz ON a.trade_date = sz.trade_date
+        FROM all_stocks_days a
+        JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
+        JOIN shangzheng sz ON a.trade_date = sz.trade_date
         WHERE a.trade_date = #{startDate}
         <if test="tsCode != null">
             AND a.ts_code = #{tsCode}
@@ -514,8 +514,8 @@
      -->
     <select id="findStockSlope" resultType="java.lang.Double">
         SELECT ss.slope
-        FROM public.all_stocks_days a
-        JOIN public.stock_slope ss ON a.id = ss.id_all_stocks_days
+        FROM all_stocks_days a
+        JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
         WHERE a.ts_code = #{tsCode}
         AND a.trade_date = #{tradeDate}
         LIMIT 1
@@ -528,7 +528,7 @@
      -->
     <select id="findMarketSlope" resultType="java.lang.Double">
         SELECT slope
-        FROM public.shangzheng
+        FROM shangzheng
         WHERE trade_date = #{tradeDate}
         LIMIT 1
     </select>
@@ -544,7 +544,7 @@
     <select id="findFiveDayAdjustmentStocks" resultType="com.example.stock.entity.StockData">
         WITH five_day_adjustment_stocks AS (
             SELECT DISTINCT a.ts_code
-            FROM public.all_stocks_days a
+            FROM all_stocks_days a
             <where>
                 <if test="tsCode != null and tsCode != ''">
                     a.ts_code = #{tsCode} AND
@@ -557,14 +557,14 @@
         ),
         prev_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &lt;= #{startDate}
             ORDER BY trade_date DESC
             LIMIT 41
         ),
         next_dates AS (
             SELECT DISTINCT trade_date
-            FROM public.all_stocks_days
+            FROM all_stocks_days
             WHERE trade_date &gt;= #{startDate}
             ORDER BY trade_date ASC
             LIMIT 41
@@ -579,7 +579,7 @@
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         JOIN five_day_adjustment_stocks ts ON a.ts_code = ts.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
@@ -592,7 +592,7 @@
      -->
     <select id="findFiveDayAdjustmentTsCodes" resultType="java.lang.String">
         SELECT DISTINCT a.ts_code
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         <where>
             a.trade_date = #{startDate}
             <if test="tsCode != null and tsCode != ''">
@@ -610,7 +610,7 @@
      -->
     <select id="countFiveDayAdjustmentStocks" resultType="java.lang.Long">
         SELECT COUNT(DISTINCT a.ts_code)
-        FROM public.all_stocks_days a
+        FROM all_stocks_days a
         <where>
             a.trade_date = #{startDate}
             <if test="tsCode != null and tsCode != ''">
@@ -632,6 +632,7 @@
             vol,
             amount,
             bay,
+            Fmark,
             COALESCE(NULLIF(ma120, 'NaN'), NULL) as ma120,
             COALESCE(NULLIF(ma250, 'NaN'), NULL) as ma250,
             name

@@ -10,8 +10,8 @@ public class SingleStockResponse {
   // 列名
   private List<String> column_names;
 
-  // 股票数据，格式为数组的数组
-  private List<List<Object>> grid_data;
+  // 股票数据，格式为数组的数组的数组
+  private List<List<List<Object>>> grid_data;
 
   @Data
   public static class StockData {
