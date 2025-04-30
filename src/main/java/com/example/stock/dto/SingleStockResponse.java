@@ -33,7 +33,7 @@ public class SingleStockResponse {
     private BigDecimal vol;
     // Bay值
     private BigDecimal bay;
-    // 成交额
+    // 买卖点折线
     private BigDecimal Fmark;
     // 半年线
     private BigDecimal ma120;
@@ -53,8 +53,8 @@ public class SingleStockResponse {
           close,
           pctChg,
           vol,
-          Fmark,
           bay,
+          Fmark,
           ma120,
           ma250,
           name

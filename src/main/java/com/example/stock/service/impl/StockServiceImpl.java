@@ -409,7 +409,7 @@ public class StockServiceImpl implements StockService {
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "Fmark", "bay",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol",  "bay","Fmark",
         "ma120", "ma250", "name"));
 
     // 创建外层List
@@ -423,7 +423,7 @@ public class StockServiceImpl implements StockService {
       // 根据Fmark值进行处理
       Object fmarkValue;
       if (stockData.getFmark() != null) {
-        Integer fmark = stockData.getFmark();
+        int fmark = stockData.getFmark();
         if (fmark == 0) {
           // 如果Fmark=0，返回当日high
           fmarkValue = stockData.getHigh();
@@ -452,8 +452,8 @@ public class StockServiceImpl implements StockService {
           stockData.getClose(),
           stockData.getPctChg(),
           stockData.getVol(),
-          fmarkValue, // 处理后的Fmark值
           stockData.getBay(),
+          fmarkValue, // 处理后的Fmark值
           stockData.getMa120(),
           stockData.getMa250(),
           stockData.getName());
