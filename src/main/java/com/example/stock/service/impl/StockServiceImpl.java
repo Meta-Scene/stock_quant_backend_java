@@ -333,7 +333,7 @@ public class StockServiceImpl implements StockService {
     // 创建响应对象
     FiveDayAdjustmentResponse response = new FiveDayAdjustmentResponse();
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "bay",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "state",
         "ma120", "ma250", "name"));
     response.setDate(targetDate);
     response.setPage(page);
@@ -409,8 +409,8 @@ public class StockServiceImpl implements StockService {
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol",  "bay","Fmark",
-        "ma120", "ma250", "name"));
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol",  "state",
+        "fmark", "ma120", "ma250", "name"));
 
     // 创建外层List
     List<List<List<Object>>> gridData = new ArrayList<>();
@@ -452,7 +452,7 @@ public class StockServiceImpl implements StockService {
           stockData.getClose(),
           stockData.getPctChg(),
           stockData.getVol(),
-          stockData.getBay(),
+          stockData.getState(),
           fmarkValue, // 处理后的Fmark值
           stockData.getMa120(),
           stockData.getMa250(),
@@ -506,7 +506,7 @@ public class StockServiceImpl implements StockService {
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "bay",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "state",
         "ma120", "ma250", "name"));
 
     // 设置查询日期
@@ -591,7 +591,7 @@ public class StockServiceImpl implements StockService {
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "bay",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "state",
         "ma120", "ma250", "name"));
 
     // 设置查询日期
@@ -648,7 +648,7 @@ public class StockServiceImpl implements StockService {
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "bay",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "state",
         "ma120", "ma250", "name"));
 
     // 设置查询日期
@@ -709,8 +709,8 @@ public class StockServiceImpl implements StockService {
     dto.setPctChg(entity.getPctChg());
     dto.setVol(entity.getVol());
 
-    // 常规查询中bay置为0
-    dto.setBay(BigDecimal.ZERO);
+    // 常规查询中state置为0
+    dto.setState(BigDecimal.ZERO);
 
     dto.setAmount(entity.getAmount());
     dto.setMa120(entity.getMa120());
@@ -733,8 +733,8 @@ public class StockServiceImpl implements StockService {
     dto.setPctChg(entity.getPctChg());
     dto.setVol(entity.getVol());
 
-    // 五日调整分析中保留原始bay值
-    dto.setBay(entity.getBay());
+    // 五日调整分析中保留原始state值
+    dto.setState(entity.getState());
 
     dto.setAmount(entity.getAmount());
     dto.setMa120(entity.getMa120());
@@ -749,7 +749,7 @@ public class StockServiceImpl implements StockService {
   private StockResponse buildEmptyResponse(String tradeDate, Integer pageNum, String tradeDateStr) {
     StockResponse response = new StockResponse();
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "bay",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "state",
         "ma120", "ma250", "name"));
     response.setDate(tradeDateStr != null ? tradeDateStr : tradeDate);
     response.setPage(pageNum != null ? pageNum : 1);

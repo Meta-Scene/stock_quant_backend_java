@@ -21,7 +21,7 @@ public class StockData {
   private BigDecimal pctChg;
   private BigDecimal vol;
   private BigDecimal amount;
-  private BigDecimal bay;
+  private BigDecimal state;
   private Integer Fmark; // Fmark字段
   private BigDecimal ma120; // 半年线
   private BigDecimal ma250; // 年线

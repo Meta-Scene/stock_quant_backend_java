@@ -35,8 +35,8 @@ public class StockResponse {
     private BigDecimal pctChg;
     // 成交量
     private BigDecimal vol;
-    // Bay值
-    private BigDecimal bay;
+    // State值
+    private BigDecimal state;
     // 成交额
     private BigDecimal amount;
     // 半年线
@@ -57,7 +57,7 @@ public class StockResponse {
           close,
           pctChg,
           vol,
-          bay,
+          state,
           ma120,
           ma250,
           name

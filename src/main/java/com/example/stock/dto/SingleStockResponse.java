@@ -31,8 +31,8 @@ public class SingleStockResponse {
     private BigDecimal pctChg;
     // 成交量
     private BigDecimal vol;
-    // Bay值
-    private BigDecimal bay;
+    // 状态值
+    private BigDecimal state;
     // 买卖点折线
     private BigDecimal Fmark;
     // 半年线
@@ -53,7 +53,7 @@ public class SingleStockResponse {
           close,
           pctChg,
           vol,
-          bay,
+          state,
           Fmark,
           ma120,
           ma250,

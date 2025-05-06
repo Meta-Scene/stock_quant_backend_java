@@ -217,8 +217,8 @@ public interface StockDataMapper extends BaseMapper<StockData> {
   Double findMarketSlope(String tradeDate);
 
   /**
-   * 查询具有买卖点的五日调整股票数据
-   * 五日调整是指满足特定技术指标条件的股票，bay字段大于0表示存在买点
+   * 查询具有买点的五日调整股票数据
+   * 五日调整是指满足特定技术指标条件的股票，state字段大于0表示存在买点
    * 
    * @param tsCode    股票代码，可选过滤条件
    * @param startDate 查询日期
@@ -234,7 +234,7 @@ public interface StockDataMapper extends BaseMapper<StockData> {
 
   /**
    * 获取具有买点的五日调整股票代码列表
-   * 返回在指定日期bay字段大于0的所有股票代码
+   * 返回在指定日期state字段大于0的所有股票代码
    *
    * @param tsCode    股票代码，可选过滤条件
    * @param startDate 查询日期
@@ -246,7 +246,7 @@ public interface StockDataMapper extends BaseMapper<StockData> {
 
   /**
    * 统计具有买点的五日调整股票数量
-   * 计算在指定日期bay字段大于0的股票数量
+   * 计算在指定日期state字段大于0的股票数量
    * 
    * @param tsCode    股票代码，可选过滤条件
    * @param startDate 查询日期

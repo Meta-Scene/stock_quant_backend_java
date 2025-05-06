@@ -41,7 +41,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -93,7 +93,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -145,7 +145,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -278,7 +278,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -329,7 +329,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -411,7 +411,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -481,7 +481,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -536,10 +536,10 @@
     <!-- 
         查询具有买点的五日调整股票数据
         五日调整是指满足特定技术指标条件的股票
-        1. five_day_adjustment_stocks: 筛选bay字段大于0的股票（表示有买点）
+        1. five_day_adjustment_stocks: 筛选state字段大于0的股票（表示有买点）
         2. 同样使用前后41个交易日构建日期区间
         3. 返回符合条件的股票在日期区间内的全部交易数据
-        4. 注意bay字段在这里作为买点指标保留原始值
+        4. 注意state字段在这里作为买点指标保留原始值
      -->
     <select id="findFiveDayAdjustmentStocks" resultType="com.example.stock.entity.StockData">
         WITH five_day_adjustment_stocks AS (
@@ -550,7 +550,7 @@
                     a.ts_code = #{tsCode} AND
                 </if>
                 a.trade_date = #{startDate}
-                AND a.bay > 0 -- 使用bay字段大于0作为买入点判断
+                AND a.state > 0 -- 使用state字段大于0作为买入点判断
             </where>
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
@@ -575,7 +575,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.bay,
+               a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -587,7 +587,7 @@
 
     <!-- 
         获取具有买点的五日调整股票代码列表
-        返回在指定日期bay字段大于0的所有股票代码
+        返回在指定日期state字段大于0的所有股票代码
         用于前端展示和统计
      -->
     <select id="findFiveDayAdjustmentTsCodes" resultType="java.lang.String">
@@ -598,14 +598,14 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.bay > 0 -- 使用bay字段大于0作为买入点判断
+            AND a.state > 0 -- 使用state字段大于0作为买入点判断
         </where>
         ORDER BY a.ts_code
     </select>
 
     <!-- 
         统计具有买点的五日调整股票数量
-        计算在指定日期bay字段大于0的股票数量
+        计算在指定日期state字段大于0的股票数量
         用于分页和统计展示
      -->
     <select id="countFiveDayAdjustmentStocks" resultType="java.lang.Long">
@@ -616,7 +616,7 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.bay > 0 -- 使用bay字段大于0作为买入点判断
+            AND a.state > 0 -- 使用state字段大于0作为买入点判断
         </where>
     </select>
     <select id="getSingleStockData" resultType="com.example.stock.entity.StockData">
@@ -631,7 +631,7 @@
             pct_chg,
             vol,
             amount,
-            bay,
+            state,
             Fmark,
             COALESCE(NULLIF(ma120, 'NaN'), NULL) as ma120,
             COALESCE(NULLIF(ma250, 'NaN'), NULL) as ma250,
