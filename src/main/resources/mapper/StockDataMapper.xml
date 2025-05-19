@@ -107,7 +107,7 @@
         查询跌停股票数据 
         跌停标准为跌幅小于等于-6.0%
         使用CTE结构:
-        1. limit_down_stocks: 筛选指定日期跌幅<=-6.0%的股票
+        1. limit_down_stocks: 筛选指定日期跌幅&lt;=-6.0%的股票
         2. prev_dates和next_dates: 获取前后各41个交易日
         3. date_range: 确定日期范围
         最终返回符合条件股票在日期范围内的所有交易数据
@@ -370,46 +370,72 @@
     <!-- 
         查询强于大盘的股票数据
         强于大盘定义为股票斜率大于上证指数斜率的股票
-        1. 连接all_stocks_days、stock_slope和shangzheng表
-        2. 筛选出斜率大于大盘斜率的股票
-        3. 同样使用前后41个交易日构建日期区间
+        1. 实时计算股票斜率，不再依赖stock_slope表
+        2. 与上证指数的斜率进行比较
+        3. 使用前后41个交易日构建日期区间
         4. 返回符合条件的股票在日期区间内的全部交易数据
      -->
     <select id="findOutperformData" resultType="com.example.stock.entity.StockData">
-        WITH outperform_stocks AS (
-            SELECT DISTINCT a.ts_code
+        WITH market_slope AS (
+            SELECT slope
+            FROM shangzheng
+            WHERE trade_date = #{startDate}
+            LIMIT 1
+        ),
+        -- 预先获取所有股票代码，减少后续重复查询
+        all_stocks AS (
+            SELECT 
+                a.ts_code,
+                a.close,
+                a.trade_date,
+                (
+                    SELECT fp.close
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_close,
+                (
+                    SELECT fp.trade_date
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_date
             FROM all_stocks_days a
-            JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
-            JOIN shangzheng sz ON a.trade_date = sz.trade_date
-            <where>
-                <if test="tsCode != null">
-                    a.ts_code = #{tsCode} AND
-                </if>
-                a.trade_date = #{startDate}
-                AND ss.slope &gt; sz.slope
-            </where>
-            ORDER BY a.ts_code
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+        ),
+        -- 计算斜率，简化计算逻辑并提高性能
+        slopes AS (
+            SELECT 
+                s.ts_code,
+                CASE
+                    WHEN s.prev_close IS NOT NULL THEN
+                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
+                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
+                    ELSE 0
+                END AS stock_slope
+            FROM all_stocks s
+        ),
+        -- 筛选强于大盘的股票
+        outperform_stocks AS (
+            SELECT s.ts_code
+            FROM slopes s, market_slope m
+            WHERE s.stock_slope &gt; m.slope
             LIMIT #{pageSize} OFFSET #{offset}
         ),
-        prev_dates AS (
-            SELECT DISTINCT trade_date
-            FROM all_stocks_days
-            WHERE trade_date &lt;= #{startDate}
-            ORDER BY trade_date DESC
-            LIMIT 41
-        ),
-        next_dates AS (
-            SELECT DISTINCT trade_date
-            FROM all_stocks_days
-            WHERE trade_date &gt;= #{startDate}
-            ORDER BY trade_date ASC
-            LIMIT 41
-        ),
+        -- 获取日期范围
         date_range AS (
-            SELECT 
-                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
-                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+            SELECT
+                (SELECT DATE_SUB(#{startDate}, INTERVAL 40 DAY)) AS start_date,
+                (SELECT DATE_ADD(#{startDate}, INTERVAL 40 DAY)) AS end_date
         )
+        -- 获取符合条件的所有数据
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
                a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
@@ -423,63 +449,127 @@
 
     <!-- 
         统计强于大盘的股票数量
-        计算斜率大于上证指数斜率的股票数量
+        使用实时计算的斜率进行比较
      -->
     <select id="countOutperformStocks" resultType="java.lang.Long">
-        SELECT COUNT(DISTINCT a.ts_code)
-        FROM all_stocks_days a
-        JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
-        JOIN shangzheng sz ON a.trade_date = sz.trade_date
-        WHERE a.trade_date = #{startDate}
-        <if test="tsCode != null">
-            AND a.ts_code = #{tsCode}
-        </if>
-        AND ss.slope &gt; sz.slope
+        WITH market_slope AS (
+            SELECT slope
+            FROM shangzheng
+            WHERE trade_date = #{startDate}
+            LIMIT 1
+        ),
+        all_stocks AS (
+            SELECT 
+                a.ts_code,
+                a.close,
+                a.trade_date,
+                (
+                    SELECT fp.close
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_close,
+                (
+                    SELECT fp.trade_date
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_date
+            FROM all_stocks_days a
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+        ),
+        slopes AS (
+            SELECT 
+                s.ts_code,
+                CASE
+                    WHEN s.prev_close IS NOT NULL THEN
+                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
+                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
+                    ELSE 0
+                END AS stock_slope
+            FROM all_stocks s
+        )
+        SELECT COUNT(*)
+        FROM slopes s, market_slope m
+        WHERE s.stock_slope &gt; m.slope
     </select>
 
     <!-- 
         弱于大盘股票数据查询
         弱于大盘定义为股票斜率小于上证指数斜率的股票
-        1. 连接all_stocks_days、stock_slope和shangzheng表
-        2. 筛选出斜率小于大盘斜率的股票
-        3. 同样使用前后41个交易日构建日期区间
+        1. 实时计算股票斜率，不再依赖stock_slope表
+        2. 与上证指数的斜率进行比较
+        3. 使用前后41个交易日构建日期区间
         4. 返回符合条件的股票在日期区间内的全部交易数据
      -->
     <select id="findUnderperformData" resultType="com.example.stock.entity.StockData">
-        WITH underperform_stocks AS (
-            SELECT DISTINCT a.ts_code
+        WITH market_slope AS (
+            SELECT slope
+            FROM shangzheng
+            WHERE trade_date = #{startDate}
+            LIMIT 1
+        ),
+        -- 预先获取所有股票代码，减少后续重复查询
+        all_stocks AS (
+            SELECT 
+                a.ts_code,
+                a.close,
+                a.trade_date,
+                (
+                    SELECT fp.close
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_close,
+                (
+                    SELECT fp.trade_date
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_date
             FROM all_stocks_days a
-            JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
-            JOIN shangzheng sz ON a.trade_date = sz.trade_date
-            <where>
-                <if test="tsCode != null">
-                    a.ts_code = #{tsCode} AND
-                </if>
-                a.trade_date = #{startDate}
-                AND ss.slope &lt; sz.slope
-            </where>
-            ORDER BY a.ts_code
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+        ),
+        -- 计算斜率，简化计算逻辑并提高性能
+        slopes AS (
+            SELECT 
+                s.ts_code,
+                CASE
+                    WHEN s.prev_close IS NOT NULL THEN
+                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
+                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
+                    ELSE 0
+                END AS stock_slope
+            FROM all_stocks s
+        ),
+        -- 筛选弱于大盘的股票
+        underperform_stocks AS (
+            SELECT s.ts_code
+            FROM slopes s, market_slope m
+            WHERE s.stock_slope &lt; m.slope
             LIMIT #{pageSize} OFFSET #{offset}
         ),
-        prev_dates AS (
-            SELECT DISTINCT trade_date
-            FROM all_stocks_days
-            WHERE trade_date &lt;= #{startDate}
-            ORDER BY trade_date DESC
-            LIMIT 41
-        ),
-        next_dates AS (
-            SELECT DISTINCT trade_date
-            FROM all_stocks_days
-            WHERE trade_date &gt;= #{startDate}
-            ORDER BY trade_date ASC
-            LIMIT 41
-        ),
+        -- 获取日期范围
         date_range AS (
-            SELECT 
-                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
-                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+            SELECT
+                (SELECT DATE_SUB(#{startDate}, INTERVAL 40 DAY)) AS start_date,
+                (SELECT DATE_ADD(#{startDate}, INTERVAL 40 DAY)) AS end_date
         )
+        -- 获取符合条件的所有数据
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
                a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
@@ -493,50 +583,62 @@
 
     <!-- 
         统计弱于大盘的股票数量
-        计算斜率小于上证指数斜率的股票数量
+        使用实时计算的斜率进行比较
      -->
     <select id="countUnderperformStocks" resultType="java.lang.Long">
-        SELECT COUNT(DISTINCT a.ts_code)
-        FROM all_stocks_days a
-        JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
-        JOIN shangzheng sz ON a.trade_date = sz.trade_date
-        WHERE a.trade_date = #{startDate}
-        <if test="tsCode != null">
-            AND a.ts_code = #{tsCode}
-        </if>
-        AND ss.slope &lt; sz.slope
-    </select>
-
-    <!-- 
-        查询指定股票在指定日期的斜率
-        从stock_slope表中获取特定股票和日期的斜率值
-        斜率表示股价的趋势，用于判断股票走势强弱
-     -->
-    <select id="findStockSlope" resultType="java.lang.Double">
-        SELECT ss.slope
-        FROM all_stocks_days a
-        JOIN stock_slope ss ON a.id = ss.id_all_stocks_days
-        WHERE a.ts_code = #{tsCode}
-        AND a.trade_date = #{tradeDate}
-        LIMIT 1
-    </select>
-
-    <!-- 
-        查询指定日期的市场斜率
-        从shangzheng表中获取特定日期的上证指数斜率
-        用于衡量整体市场趋势，与个股斜率比较可判断强弱
-     -->
-    <select id="findMarketSlope" resultType="java.lang.Double">
-        SELECT slope
-        FROM shangzheng
-        WHERE trade_date = #{tradeDate}
-        LIMIT 1
+        WITH market_slope AS (
+            SELECT slope
+            FROM shangzheng
+            WHERE trade_date = #{startDate}
+            LIMIT 1
+        ),
+        all_stocks AS (
+            SELECT 
+                a.ts_code,
+                a.close,
+                a.trade_date,
+                (
+                    SELECT fp.close
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_close,
+                (
+                    SELECT fp.trade_date
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
+                      AND fp.trade_date &lt; a.trade_date
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_date
+            FROM all_stocks_days a
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+        ),
+        slopes AS (
+            SELECT 
+                s.ts_code,
+                CASE
+                    WHEN s.prev_close IS NOT NULL THEN
+                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
+                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
+                    ELSE 0
+                END AS stock_slope
+            FROM all_stocks s
+        )
+        SELECT COUNT(*)
+        FROM slopes s, market_slope m
+        WHERE s.stock_slope &lt; m.slope
     </select>
 
     <!-- 
         查询具有买点的五日调整股票数据
         五日调整是指满足特定技术指标条件的股票
-        1. five_day_adjustment_stocks: 筛选state字段大于0的股票（表示有买点）
+        1. five_day_adjustment_stocks: 筛选state字段等于1的股票（表示有买点）
         2. 同样使用前后41个交易日构建日期区间
         3. 返回符合条件的股票在日期区间内的全部交易数据
         4. 注意state字段在这里作为买点指标保留原始值
@@ -550,7 +652,7 @@
                     a.ts_code = #{tsCode} AND
                 </if>
                 a.trade_date = #{startDate}
-                AND a.state > 0 -- 使用state字段大于0作为买入点判断
+                AND a.state = 1 -- 使用state字段大于0作为买入点判断
             </where>
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
@@ -587,7 +689,7 @@
 
     <!-- 
         获取具有买点的五日调整股票代码列表
-        返回在指定日期state字段大于0的所有股票代码
+        返回在指定日期state字段等于1的所有股票代码
         用于前端展示和统计
      -->
     <select id="findFiveDayAdjustmentTsCodes" resultType="java.lang.String">
@@ -598,14 +700,14 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.state > 0 -- 使用state字段大于0作为买入点判断
+            AND a.state = 1 -- 使用state字段大于0作为买入点判断
         </where>
         ORDER BY a.ts_code
     </select>
 
     <!-- 
         统计具有买点的五日调整股票数量
-        计算在指定日期state字段大于0的股票数量
+        计算在指定日期state字段等于1的股票数量
         用于分页和统计展示
      -->
     <select id="countFiveDayAdjustmentStocks" resultType="java.lang.Long">
@@ -616,7 +718,7 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.state > 0 -- 使用state字段大于0作为买入点判断
+            AND a.state = 1 -- 使用state字段大于0作为买入点判断
         </where>
     </select>
     <select id="getSingleStockData" resultType="com.example.stock.entity.StockData">
@@ -639,5 +741,436 @@
         FROM all_stocks_days
         WHERE ts_code = #{tsCode}
         ORDER BY trade_date ASC
+    </select>
+
+    <!-- 
+        查询具有MACD金叉信号的股票数据
+        MACD金叉是指macd_golden_state字段等于1的股票
+        1. macd_golden_stocks: 筛选macd_golden_state字段等于1的股票
+        2. 同样使用前后41个交易日构建日期区间
+        3. 返回符合条件的股票在日期区间内的全部交易数据
+        4. 注意macd_golden_state字段作为信号指标保留原始值
+     -->
+    <select id="findMacdGoldenCrossStocks" resultType="com.example.stock.entity.StockData">
+        WITH macd_golden_stocks AS (
+            SELECT DISTINCT a.ts_code
+            FROM all_stocks_days a
+            <where>
+                <if test="tsCode != null and tsCode != ''">
+                    a.ts_code = #{tsCode} AND
+                </if>
+                a.trade_date = #{startDate}
+                AND a.macd_golden_state = 1 -- 使用macd_golden_state字段等于1作为信号判断
+            </where>
+            ORDER BY a.ts_code
+            LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+        )
+        SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
+               a.amount, a.macd_golden_state as state,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
+        FROM all_stocks_days a
+        JOIN macd_golden_stocks ts ON a.ts_code = ts.ts_code
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
+        ORDER BY a.ts_code, a.trade_date ASC
+    </select>
+
+    <!-- 
+        获取具有MACD金叉信号的股票代码列表
+        返回在指定日期macd_golden_state字段等于1的所有股票代码
+        用于前端展示和统计
+     -->
+    <select id="findMacdGoldenCrossTsCodes" resultType="java.lang.String">
+        SELECT DISTINCT a.ts_code
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.macd_golden_state = 1 -- 使用macd_golden_state字段等于1作为信号判断
+        </where>
+        ORDER BY a.ts_code
+    </select>
+
+    <!-- 
+        统计具有MACD金叉信号的股票数量
+        计算在指定日期macd_golden_state字段等于1的股票数量
+        用于分页和统计展示
+     -->
+    <select id="countMacdGoldenCrossStocks" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT a.ts_code)
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.macd_golden_state = 1 -- 使用macd_golden_state字段等于1作为信号判断
+        </where>
+    </select>
+    
+    <!-- 
+        查询具有KDJ金叉信号的股票数据
+        KDJ金叉是指kdj_gloden_state字段等于1的股票
+        1. kdj_golden_stocks: 筛选kdj_gloden_state字段等于1的股票
+        2. 同样使用前后41个交易日构建日期区间
+        3. 返回符合条件的股票在日期区间内的全部交易数据
+        4. 注意kdj_gloden_state字段作为信号指标保留原始值
+     -->
+    <select id="findKdjGoldenCrossStocks" resultType="com.example.stock.entity.StockData">
+        WITH kdj_golden_stocks AS (
+            SELECT DISTINCT a.ts_code
+            FROM all_stocks_days a
+            <where>
+                <if test="tsCode != null and tsCode != ''">
+                    a.ts_code = #{tsCode} AND
+                </if>
+                a.trade_date = #{startDate}
+                AND a.kdj_gloden_state = 1 -- 使用kdj_gloden_state字段等于1作为信号判断
+            </where>
+            ORDER BY a.ts_code
+            LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+        )
+        SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
+               a.amount, a.kdj_gloden_state as state,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
+        FROM all_stocks_days a
+        JOIN kdj_golden_stocks ts ON a.ts_code = ts.ts_code
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
+        ORDER BY a.ts_code, a.trade_date ASC
+    </select>
+
+    <!-- 
+        获取具有KDJ金叉信号的股票代码列表
+        返回在指定日期kdj_gloden_state字段等于1的所有股票代码
+        用于前端展示和统计
+     -->
+    <select id="findKdjGoldenCrossTsCodes" resultType="java.lang.String">
+        SELECT DISTINCT a.ts_code
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.kdj_gloden_state = 1 -- 使用kdj_gloden_state字段等于1作为信号判断
+        </where>
+        ORDER BY a.ts_code
+    </select>
+
+    <!-- 
+        统计具有KDJ金叉信号的股票数量
+        计算在指定日期kdj_gloden_state字段等于1的股票数量
+        用于分页和统计展示
+     -->
+    <select id="countKdjGoldenCrossStocks" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT a.ts_code)
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.kdj_gloden_state = 1 -- 使用kdj_gloden_state字段等于1作为信号判断
+        </where>
+    </select>
+    
+    <!-- 
+        查询具有低位资金净流入信号的股票数据
+        低位资金净流入是指low_price_state字段等于1的股票
+        1. low_price_stocks: 筛选low_price_state字段等于1的股票
+        2. 同样使用前后41个交易日构建日期区间
+        3. 返回符合条件的股票在日期区间内的全部交易数据
+        4. 注意low_price_state字段作为信号指标保留原始值
+     -->
+    <select id="findLowPriceInflowStocks" resultType="com.example.stock.entity.StockData">
+        WITH low_price_stocks AS (
+            SELECT DISTINCT a.ts_code
+            FROM all_stocks_days a
+            <where>
+                <if test="tsCode != null and tsCode != ''">
+                    a.ts_code = #{tsCode} AND
+                </if>
+                a.trade_date = #{startDate}
+                AND a.low_price_state = 1 -- 使用low_price_state字段等于1作为信号判断
+            </where>
+            ORDER BY a.ts_code
+            LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+        )
+        SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
+               a.amount, a.low_price_state as state,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
+        FROM all_stocks_days a
+        JOIN low_price_stocks ts ON a.ts_code = ts.ts_code
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
+        ORDER BY a.ts_code, a.trade_date ASC
+    </select>
+
+    <!-- 
+        获取具有低位资金净流入信号的股票代码列表
+        返回在指定日期low_price_state字段等于1的所有股票代码
+        用于前端展示和统计
+     -->
+    <select id="findLowPriceInflowTsCodes" resultType="java.lang.String">
+        SELECT DISTINCT a.ts_code
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.low_price_state = 1 -- 使用low_price_state字段等于1作为信号判断
+        </where>
+        ORDER BY a.ts_code
+    </select>
+
+    <!-- 
+        统计具有低位资金净流入信号的股票数量
+        计算在指定日期low_price_state字段等于1的股票数量
+        用于分页和统计展示
+     -->
+    <select id="countLowPriceInflowStocks" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT a.ts_code)
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.low_price_state = 1 -- 使用low_price_state字段等于1作为信号判断
+        </where>
+    </select>
+    
+    <!-- 
+        查询具有高位资金净流出信号的股票数据
+        高位资金净流出是指high_level_state字段等于1的股票
+        1. high_level_stocks: 筛选high_level_state字段等于1的股票
+        2. 同样使用前后41个交易日构建日期区间
+        3. 返回符合条件的股票在日期区间内的全部交易数据
+        4. 注意high_level_state字段作为信号指标保留原始值
+     -->
+    <select id="findHighLevelOutflowStocks" resultType="com.example.stock.entity.StockData">
+        WITH high_level_stocks AS (
+            SELECT DISTINCT a.ts_code
+            FROM all_stocks_days a
+            <where>
+                <if test="tsCode != null and tsCode != ''">
+                    a.ts_code = #{tsCode} AND
+                </if>
+                a.trade_date = #{startDate}
+                AND a.high_level_state = 1 -- 使用high_level_state字段等于1作为信号判断
+            </where>
+            ORDER BY a.ts_code
+            LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+        )
+        SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
+               a.amount, a.high_level_state as state,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
+        FROM all_stocks_days a
+        JOIN high_level_stocks ts ON a.ts_code = ts.ts_code
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
+        ORDER BY a.ts_code, a.trade_date ASC
+    </select>
+
+    <!-- 
+        获取具有高位资金净流出信号的股票代码列表
+        返回在指定日期high_level_state字段等于1的所有股票代码
+        用于前端展示和统计
+     -->
+    <select id="findHighLevelOutflowTsCodes" resultType="java.lang.String">
+        SELECT DISTINCT a.ts_code
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.high_level_state = 1 -- 使用high_level_state字段等于1作为信号判断
+        </where>
+        ORDER BY a.ts_code
+    </select>
+
+    <!-- 
+        统计具有高位资金净流出信号的股票数量
+        计算在指定日期high_level_state字段等于1的股票数量
+        用于分页和统计展示
+     -->
+    <select id="countHighLevelOutflowStocks" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT a.ts_code)
+        FROM all_stocks_days a
+        <where>
+            a.trade_date = #{startDate}
+            <if test="tsCode != null and tsCode != ''">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.high_level_state = 1 -- 使用high_level_state字段等于1作为信号判断
+        </where>
+    </select>
+
+    <!-- 
+        查询指定股票在指定日期的斜率
+        实时计算特定股票在指定日期的斜率值
+        斜率表示股价的趋势，用于判断股票走势强弱
+     -->
+    <select id="findStockSlope" resultType="java.lang.Double">
+        WITH stock_data AS (
+            SELECT 
+                a.close AS current_close,
+                a.trade_date AS curr_date,
+                (
+                    -- 获取前一个Fmark点数据
+                    SELECT fp.close
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = #{tsCode}
+                    AND fp.trade_date &lt; #{tradeDate}
+                    AND fp.Fmark IN (0, 1)
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_close,
+                (
+                    -- 获取前一个Fmark点日期
+                    SELECT fp.trade_date
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = #{tsCode}
+                    AND fp.trade_date &lt; #{tradeDate}
+                    AND fp.Fmark IN (0, 1)
+                    ORDER BY fp.trade_date DESC
+                    LIMIT 1
+                ) AS prev_date,
+                (
+                    -- 如果没有前一个Fmark点，获取最早的日期数据
+                    SELECT fp.close
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = #{tsCode}
+                    AND fp.trade_date &lt; #{tradeDate}
+                    ORDER BY fp.trade_date ASC
+                    LIMIT 1
+                ) AS earliest_close,
+                (
+                    -- 如果没有前一个Fmark点，获取最早的日期
+                    SELECT fp.trade_date
+                    FROM all_stocks_days fp
+                    WHERE fp.ts_code = #{tsCode}
+                    AND fp.trade_date &lt; #{tradeDate}
+                    ORDER BY fp.trade_date ASC
+                    LIMIT 1
+                ) AS earliest_date
+            FROM all_stocks_days a
+            WHERE a.ts_code = #{tsCode}
+            AND a.trade_date = #{tradeDate}
+        )
+        SELECT 
+            CASE 
+                WHEN sd.prev_close IS NOT NULL THEN
+                    (sd.current_close - sd.prev_close) / sd.prev_close / 
+                    (SELECT COUNT(*) FROM all_stocks_days 
+                     WHERE ts_code = #{tsCode} 
+                     AND trade_date &gt; sd.prev_date 
+                     AND trade_date &lt;= sd.curr_date)
+                ELSE
+                    (sd.current_close - sd.earliest_close) / sd.earliest_close / 
+                    (SELECT COUNT(*) FROM all_stocks_days 
+                     WHERE ts_code = #{tsCode} 
+                     AND trade_date &gt;= sd.earliest_date 
+                     AND trade_date &lt;= sd.curr_date)
+            END * 100 AS slope
+        FROM stock_data sd
+        LIMIT 1
+    </select>
+
+    <!-- 
+        查询指定日期的市场斜率
+        从shangzheng表中获取特定日期的上证指数斜率
+        用于衡量整体市场趋势，与个股斜率比较可判断强弱
+     -->
+    <select id="findMarketSlope" resultType="java.lang.Double">
+        SELECT slope
+        FROM shangzheng
+        WHERE trade_date = #{tradeDate}
+        LIMIT 1
     </select>
 </mapper> 

@@ -256,4 +256,144 @@ public interface StockDataMapper extends BaseMapper<StockData> {
 
 
   List<StockData> getSingleStockData(String tsCode);
+  
+  /**
+   * 查询具有MACD金叉信号的股票数据
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @param pageSize  每页数量
+   * @param offset    偏移量（用于分页）
+   * @return 有MACD金叉信号的股票数据列表
+   */
+  List<StockData> findMacdGoldenCrossStocks(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  /**
+   * 获取具有MACD金叉信号的股票代码列表
+   *
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有MACD金叉信号的股票代码列表
+   */
+  List<String> findMacdGoldenCrossTsCodes(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate);
+
+  /**
+   * 统计具有MACD金叉信号的股票数量
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有MACD金叉信号的股票数量
+   */
+  Long countMacdGoldenCrossStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
+  
+  /**
+   * 查询具有KDJ金叉信号的股票数据
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @param pageSize  每页数量
+   * @param offset    偏移量（用于分页）
+   * @return 有KDJ金叉信号的股票数据列表
+   */
+  List<StockData> findKdjGoldenCrossStocks(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  /**
+   * 获取具有KDJ金叉信号的股票代码列表
+   *
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有KDJ金叉信号的股票代码列表
+   */
+  List<String> findKdjGoldenCrossTsCodes(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate);
+
+  /**
+   * 统计具有KDJ金叉信号的股票数量
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有KDJ金叉信号的股票数量
+   */
+  Long countKdjGoldenCrossStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
+  
+  /**
+   * 查询具有低位资金净流入信号的股票数据
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @param pageSize  每页数量
+   * @param offset    偏移量（用于分页）
+   * @return 有低位资金净流入信号的股票数据列表
+   */
+  List<StockData> findLowPriceInflowStocks(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  /**
+   * 获取具有低位资金净流入信号的股票代码列表
+   *
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有低位资金净流入信号的股票代码列表
+   */
+  List<String> findLowPriceInflowTsCodes(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate);
+
+  /**
+   * 统计具有低位资金净流入信号的股票数量
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有低位资金净流入信号的股票数量
+   */
+  Long countLowPriceInflowStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
+  
+  /**
+   * 查询具有高位资金净流出信号的股票数据
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @param pageSize  每页数量
+   * @param offset    偏移量（用于分页）
+   * @return 有高位资金净流出信号的股票数据列表
+   */
+  List<StockData> findHighLevelOutflowStocks(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  /**
+   * 获取具有高位资金净流出信号的股票代码列表
+   *
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有高位资金净流出信号的股票代码列表
+   */
+  List<String> findHighLevelOutflowTsCodes(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate);
+
+  /**
+   * 统计具有高位资金净流出信号的股票数量
+   * 
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 查询日期
+   * @return 有高位资金净流出信号的股票数量
+   */
+  Long countHighLevelOutflowStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
 }

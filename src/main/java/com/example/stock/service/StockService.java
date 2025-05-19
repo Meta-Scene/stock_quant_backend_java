@@ -5,6 +5,10 @@ import org.springframework.stereotype.Service;
 
 import com.example.stock.dto.FiveDayAdjustmentResponse;
 import com.example.stock.dto.StockResponse;
+import com.example.stock.dto.MacdGoldenCrossResponse;
+import com.example.stock.dto.KdjGoldenCrossResponse;
+import com.example.stock.dto.LowPriceInflowResponse;
+import com.example.stock.dto.HighLevelOutflowResponse;
 
 /**
  * 股票数据服务接口
@@ -115,4 +119,44 @@ public interface StockService {
    * @return
    */
   SingleStockResponse getSingleStockData(String tsCode);
+  
+  /**
+   * 获取MACD金叉分析数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return MACD金叉分析数据响应
+   */
+  MacdGoldenCrossResponse getMacdGoldenCross(String tsCode, String tradeDate, Integer pageNum);
+  
+  /**
+   * 获取KDJ金叉分析数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return KDJ金叉分析数据响应
+   */
+  KdjGoldenCrossResponse getKdjGoldenCross(String tsCode, String tradeDate, Integer pageNum);
+  
+  /**
+   * 获取低位资金净流入分析数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 低位资金净流入分析数据响应
+   */
+  LowPriceInflowResponse getLowPriceInflow(String tsCode, String tradeDate, Integer pageNum);
+  
+  /**
+   * 获取高位资金净流出分析数据
+   * 
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 高位资金净流出分析数据响应
+   */
+  HighLevelOutflowResponse getHighLevelOutflow(String tsCode, String tradeDate, Integer pageNum);
 }

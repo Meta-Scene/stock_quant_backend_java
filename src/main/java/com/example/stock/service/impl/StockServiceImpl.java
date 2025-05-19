@@ -3,6 +3,10 @@ package com.example.stock.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.stock.dto.FiveDayAdjustmentResponse;
+import com.example.stock.dto.HighLevelOutflowResponse;
+import com.example.stock.dto.KdjGoldenCrossResponse;
+import com.example.stock.dto.LowPriceInflowResponse;
+import com.example.stock.dto.MacdGoldenCrossResponse;
 import com.example.stock.dto.SingleStockResponse;
 import com.example.stock.dto.StockResponse;
 import com.example.stock.entity.StockData;
@@ -32,6 +36,14 @@ public class StockServiceImpl implements StockService {
   @Value("${stock.page.size}")
   private int pageSize;
 
+  /**
+   * 获取所有股票数据
+   * 
+   * @param tsCode
+   * @param tradeDate
+   * @param pageNum
+   * @return
+   */
   @Override
   public StockResponse getAllData(String tsCode, String tradeDate, Integer pageNum) {
     // 使用传入的日期或获取最新日期
@@ -70,7 +82,7 @@ public class StockServiceImpl implements StockService {
 
     return buildResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate);
   }
-
+  
   @Override
   public StockResponse getLimitUpData(String tsCode, String tradeDate, Integer pageNum) {
     // 使用传入的日期或获取最新日期
@@ -471,6 +483,384 @@ public class StockServiceImpl implements StockService {
   }
 
   /**
+   * 获取MACD金叉分析数据
+   * MACD金叉是技术分析中的一种买入信号，表示短期均线上穿长期均线
+   * 通过macd_golden_state字段识别具有MACD金叉信号的股票
+   * 
+   * 实现步骤：
+   * 1. 处理传入参数，确定查询日期和分页参数
+   * 2. 查询指定日期所有具有MACD金叉信号的股票代码和数量
+   * 3. 构建响应对象，设置列名和基本信息
+   * 4. 查询符合条件的股票数据，包括前后41个交易日的数据
+   * 5. 将数据按照股票代码分组，并转换为前端所需格式
+   * 6. 返回完整的响应对象
+   * 
+   * @param tsCode 股票代码，可选参数，为null时查询所有股票
+   * @param tradeDateStr 交易日期，为null时使用最新交易日
+   * @param pageNum 页码，用于分页查询
+   * @return MACD金叉分析数据，包含符合条件的股票及其前后41个交易日的数据
+   */
+  @Override
+  public MacdGoldenCrossResponse getMacdGoldenCross(String tsCode, String tradeDateStr, Integer pageNum) {
+    // 处理ts_code参数为空字符串的情况，将其设置为null
+    if (tsCode != null && tsCode.trim().isEmpty()) {
+      tsCode = null;
+    }
+
+    // 确定查询日期
+    String targetDate = StringUtils.isEmpty(tradeDateStr) ? stockDataMapper.findMaxDate() : tradeDateStr;
+
+    int offset = (pageNum != null ? pageNum - 1 : 0) * pageSize;
+    int page = pageNum != null ? pageNum : 1;
+
+    // 获取所有包含MACD金叉信号的股票代码
+    List<String> macdGoldenTsCodes = stockDataMapper.findMacdGoldenCrossTsCodes(tsCode, targetDate);
+
+    // 获取有MACD金叉信号的股票数量
+    Long totalCount = stockDataMapper.countMacdGoldenCrossStocks(tsCode, targetDate);
+
+    // 创建响应对象
+    MacdGoldenCrossResponse response = new MacdGoldenCrossResponse();
+    response.setColumn_names(Arrays.asList(
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "macd_golden_state",
+        "ma120", "ma250", "name"));
+    response.setDate(targetDate);
+    response.setPage(page);
+    response.setStock_count(totalCount.intValue());
+    response.setTs_codes(macdGoldenTsCodes);
+
+    // 没有数据或页码超出范围时，返回空结果集
+    if (totalCount == 0 || totalCount <= offset) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 查询包含MACD金叉信号的股票数据
+    List<StockData> stockList = stockDataMapper.findMacdGoldenCrossStocks(
+        tsCode,
+        targetDate,
+        pageSize,
+        offset);
+
+    // 如果分页查询没有返回数据，返回空结果集
+    if (stockList.isEmpty()) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 将股票数据按照股票代码分组，使用专门的转换方法
+    Map<String, List<StockResponse.StockData>> groupedDataByStock = stockList.stream()
+        .map(entity -> convertToDtoForAnalysis(entity, "macd_golden_state")) // 传递macd_golden_state标识
+        .collect(Collectors.groupingBy(StockResponse.StockData::getTsCode));
+
+    // 获取特定日期的数据用于排序（股票代码已在SQL中按排序）
+    List<String> sortedStockCodes = new ArrayList<>(groupedDataByStock.keySet());
+
+    // 转换为grid_data格式：List<List<List<Object>>>
+    List<List<List<Object>>> gridData = new ArrayList<>();
+
+    for (String stockCode : sortedStockCodes) {
+      List<List<Object>> stockDataArray = new ArrayList<>();
+
+      // 对同一只股票的数据按照日期升序排序
+      List<StockResponse.StockData> sortedData = groupedDataByStock.get(stockCode).stream()
+          .sorted(Comparator.comparing(StockResponse.StockData::getTradeDate))
+          .collect(Collectors.toList());
+
+      // 将每个股票的数据转换为Object[]并添加到stockDataArray
+      for (StockResponse.StockData data : sortedData) {
+        stockDataArray.add(Arrays.asList(data.toObjectArray()));
+      }
+
+      gridData.add(stockDataArray);
+    }
+
+    // 设置响应数据
+    response.setGrid_data(gridData);
+
+    return response;
+  }
+  
+  /**
+   * 获取KDJ金叉分析数据
+   * KDJ金叉是技术分析中另一种重要的买入信号，指K线上穿D线形成的交叉
+   * 通过kdj_gloden_state字段识别具有KDJ金叉信号的股票
+   * 
+   * 实现步骤：
+   * 1. 处理传入参数，确定查询日期和分页参数
+   * 2. 查询指定日期所有具有KDJ金叉信号的股票代码和数量
+   * 3. 构建响应对象，设置列名和基本信息
+   * 4. 查询符合条件的股票数据，包括前后41个交易日的数据
+   * 5. 将数据按照股票代码分组，并转换为前端所需格式
+   * 6. 返回完整的响应对象
+   * 
+   * @param tsCode 股票代码，可选参数，为null时查询所有股票
+   * @param tradeDateStr 交易日期，为null时使用最新交易日
+   * @param pageNum 页码，用于分页查询
+   * @return KDJ金叉分析数据，包含符合条件的股票及其前后41个交易日的数据
+   */
+  @Override
+  public KdjGoldenCrossResponse getKdjGoldenCross(String tsCode, String tradeDateStr, Integer pageNum) {
+    // 处理ts_code参数为空字符串的情况，将其设置为null
+    if (tsCode != null && tsCode.trim().isEmpty()) {
+      tsCode = null;
+    }
+
+    // 确定查询日期
+    String targetDate = StringUtils.isEmpty(tradeDateStr) ? stockDataMapper.findMaxDate() : tradeDateStr;
+
+    int offset = (pageNum != null ? pageNum - 1 : 0) * pageSize;
+    int page = pageNum != null ? pageNum : 1;
+
+    // 获取所有包含KDJ金叉信号的股票代码
+    List<String> kdjGoldenTsCodes = stockDataMapper.findKdjGoldenCrossTsCodes(tsCode, targetDate);
+
+    // 获取有KDJ金叉信号的股票数量
+    Long totalCount = stockDataMapper.countKdjGoldenCrossStocks(tsCode, targetDate);
+
+    // 创建响应对象
+    KdjGoldenCrossResponse response = new KdjGoldenCrossResponse();
+    response.setColumn_names(Arrays.asList(
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "kdj_gloden_state",
+        "ma120", "ma250", "name"));
+    response.setDate(targetDate);
+    response.setPage(page);
+    response.setStock_count(totalCount.intValue());
+    response.setTs_codes(kdjGoldenTsCodes);
+
+    // 没有数据或页码超出范围时，返回空结果集
+    if (totalCount == 0 || totalCount <= offset) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 查询包含KDJ金叉信号的股票数据
+    List<StockData> stockList = stockDataMapper.findKdjGoldenCrossStocks(
+        tsCode,
+        targetDate,
+        pageSize,
+        offset);
+
+    // 如果分页查询没有返回数据，返回空结果集
+    if (stockList.isEmpty()) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 将股票数据按照股票代码分组，使用专门的转换方法
+    Map<String, List<StockResponse.StockData>> groupedDataByStock = stockList.stream()
+        .map(entity -> convertToDtoForAnalysis(entity, "kdj_gloden_state")) // 传递kdj_gloden_state标识
+        .collect(Collectors.groupingBy(StockResponse.StockData::getTsCode));
+
+    // 获取特定日期的数据用于排序（股票代码已在SQL中按排序）
+    List<String> sortedStockCodes = new ArrayList<>(groupedDataByStock.keySet());
+
+    // 转换为grid_data格式：List<List<List<Object>>>
+    List<List<List<Object>>> gridData = new ArrayList<>();
+
+    for (String stockCode : sortedStockCodes) {
+      List<List<Object>> stockDataArray = new ArrayList<>();
+
+      // 对同一只股票的数据按照日期升序排序
+      List<StockResponse.StockData> sortedData = groupedDataByStock.get(stockCode).stream()
+          .sorted(Comparator.comparing(StockResponse.StockData::getTradeDate))
+          .collect(Collectors.toList());
+
+      // 将每个股票的数据转换为Object[]并添加到stockDataArray
+      for (StockResponse.StockData data : sortedData) {
+        stockDataArray.add(Arrays.asList(data.toObjectArray()));
+      }
+
+      gridData.add(stockDataArray);
+    }
+
+    // 设置响应数据
+    response.setGrid_data(gridData);
+
+    return response;
+  }
+  
+  /**
+   * 获取低位资金净流入分析数据
+   * 低位资金净流入表示股票在低价位时有资金流入，可能是潜在的买入机会
+   * 通过low_price_state字段识别具有低位资金净流入信号的股票
+   * 
+   * 实现步骤：
+   * 1. 处理传入参数，确定查询日期和分页参数
+   * 2. 查询指定日期所有具有低位资金净流入信号的股票代码和数量
+   * 3. 构建响应对象，设置列名和基本信息
+   * 4. 查询符合条件的股票数据，包括前后41个交易日的数据
+   * 5. 将数据按照股票代码分组，并转换为前端所需格式
+   * 6. 返回完整的响应对象
+   * 
+   * @param tsCode 股票代码，可选参数，为null时查询所有股票
+   * @param tradeDateStr 交易日期，为null时使用最新交易日
+   * @param pageNum 页码，用于分页查询
+   * @return 低位资金净流入分析数据，包含符合条件的股票及其前后41个交易日的数据
+   */
+  @Override
+  public LowPriceInflowResponse getLowPriceInflow(String tsCode, String tradeDateStr, Integer pageNum) {
+    // 处理ts_code参数为空字符串的情况，将其设置为null
+    if (tsCode != null && tsCode.trim().isEmpty()) {
+      tsCode = null;
+    }
+
+    // 确定查询日期
+    String targetDate = StringUtils.isEmpty(tradeDateStr) ? stockDataMapper.findMaxDate() : tradeDateStr;
+
+    int offset = (pageNum != null ? pageNum - 1 : 0) * pageSize;
+    int page = pageNum != null ? pageNum : 1;
+
+    // 获取所有包含低位资金净流入信号的股票代码
+    List<String> lowPriceTsCodes = stockDataMapper.findLowPriceInflowTsCodes(tsCode, targetDate);
+
+    // 获取有低位资金净流入信号的股票数量
+    Long totalCount = stockDataMapper.countLowPriceInflowStocks(tsCode, targetDate);
+
+    // 创建响应对象
+    LowPriceInflowResponse response = new LowPriceInflowResponse();
+    response.setColumn_names(Arrays.asList(
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "low_price_state",
+        "ma120", "ma250", "name"));
+    response.setDate(targetDate);
+    response.setPage(page);
+    response.setStock_count(totalCount.intValue());
+    response.setTs_codes(lowPriceTsCodes);
+
+    // 没有数据或页码超出范围时，返回空结果集
+    if (totalCount == 0 || totalCount <= offset) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 查询包含低位资金净流入信号的股票数据
+    List<StockData> stockList = stockDataMapper.findLowPriceInflowStocks(
+        tsCode,
+        targetDate,
+        pageSize,
+        offset);
+
+    // 如果分页查询没有返回数据，返回空结果集
+    if (stockList.isEmpty()) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 将股票数据按照股票代码分组，使用专门的转换方法
+    Map<String, List<StockResponse.StockData>> groupedDataByStock = stockList.stream()
+        .map(entity -> convertToDtoForAnalysis(entity, "low_price_state")) // 传递low_price_state标识
+        .collect(Collectors.groupingBy(StockResponse.StockData::getTsCode));
+
+    // 获取特定日期的数据用于排序（股票代码已在SQL中按排序）
+    List<String> sortedStockCodes = new ArrayList<>(groupedDataByStock.keySet());
+
+    // 转换为grid_data格式：List<List<List<Object>>>
+    List<List<List<Object>>> gridData = new ArrayList<>();
+
+    for (String stockCode : sortedStockCodes) {
+      List<List<Object>> stockDataArray = new ArrayList<>();
+
+      // 对同一只股票的数据按照日期升序排序
+      List<StockResponse.StockData> sortedData = groupedDataByStock.get(stockCode).stream()
+          .sorted(Comparator.comparing(StockResponse.StockData::getTradeDate))
+          .collect(Collectors.toList());
+
+      // 将每个股票的数据转换为Object[]并添加到stockDataArray
+      for (StockResponse.StockData data : sortedData) {
+        stockDataArray.add(Arrays.asList(data.toObjectArray()));
+      }
+
+      gridData.add(stockDataArray);
+    }
+
+    // 设置响应数据
+    response.setGrid_data(gridData);
+
+    return response;
+  }
+  
+  @Override
+  public HighLevelOutflowResponse getHighLevelOutflow(String tsCode, String tradeDateStr, Integer pageNum) {
+    // 处理ts_code参数为空字符串的情况，将其设置为null
+    if (tsCode != null && tsCode.trim().isEmpty()) {
+      tsCode = null;
+    }
+
+    // 确定查询日期
+    String targetDate = StringUtils.isEmpty(tradeDateStr) ? stockDataMapper.findMaxDate() : tradeDateStr;
+
+    int offset = (pageNum != null ? pageNum - 1 : 0) * pageSize;
+    int page = pageNum != null ? pageNum : 1;
+
+    // 获取所有包含高位资金净流出信号的股票代码
+    List<String> highLevelTsCodes = stockDataMapper.findHighLevelOutflowTsCodes(tsCode, targetDate);
+
+    // 获取有高位资金净流出信号的股票数量
+    Long totalCount = stockDataMapper.countHighLevelOutflowStocks(tsCode, targetDate);
+
+    // 创建响应对象
+    HighLevelOutflowResponse response = new HighLevelOutflowResponse();
+    response.setColumn_names(Arrays.asList(
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "high_level_state",
+        "ma120", "ma250", "name"));
+    response.setDate(targetDate);
+    response.setPage(page);
+    response.setStock_count(totalCount.intValue());
+    response.setTs_codes(highLevelTsCodes);
+
+    // 没有数据或页码超出范围时，返回空结果集
+    if (totalCount == 0 || totalCount <= offset) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 查询包含高位资金净流出信号的股票数据
+    List<StockData> stockList = stockDataMapper.findHighLevelOutflowStocks(
+        tsCode,
+        targetDate,
+        pageSize,
+        offset);
+
+    // 如果分页查询没有返回数据，返回空结果集
+    if (stockList.isEmpty()) {
+      response.setGrid_data(new ArrayList<>());
+      return response;
+    }
+
+    // 将股票数据按照股票代码分组，使用专门的转换方法
+    Map<String, List<StockResponse.StockData>> groupedDataByStock = stockList.stream()
+        .map(entity -> convertToDtoForAnalysis(entity, "high_level_state")) // 传递high_level_state标识
+        .collect(Collectors.groupingBy(StockResponse.StockData::getTsCode));
+
+    // 获取特定日期的数据用于排序（股票代码已在SQL中按排序）
+    List<String> sortedStockCodes = new ArrayList<>(groupedDataByStock.keySet());
+
+    // 转换为grid_data格式：List<List<List<Object>>>
+    List<List<List<Object>>> gridData = new ArrayList<>();
+
+    for (String stockCode : sortedStockCodes) {
+      List<List<Object>> stockDataArray = new ArrayList<>();
+
+      // 对同一只股票的数据按照日期升序排序
+      List<StockResponse.StockData> sortedData = groupedDataByStock.get(stockCode).stream()
+          .sorted(Comparator.comparing(StockResponse.StockData::getTradeDate))
+          .collect(Collectors.toList());
+
+      // 将每个股票的数据转换为Object[]并添加到stockDataArray
+      for (StockResponse.StockData data : sortedData) {
+        stockDataArray.add(Arrays.asList(data.toObjectArray()));
+      }
+
+      gridData.add(stockDataArray);
+    }
+
+    // 设置响应数据
+    response.setGrid_data(gridData);
+
+    return response;
+  }
+  
+  /**
    * 获取日期范围
    *
    * @param tradeDate 交易日期
@@ -720,9 +1110,10 @@ public class StockServiceImpl implements StockService {
   }
 
   /**
-   * 将实体转换为DTO (用于五日调整分析)
+   * 将实体转换为DTO，用于分析场景
+   * 根据分析类型返回不同的状态字段
    */
-  private StockResponse.StockData convertToDtoForAnalysis(StockData entity) {
+  private StockResponse.StockData convertToDtoForAnalysis(StockData entity, String stateType) {
     StockResponse.StockData dto = new StockResponse.StockData();
     dto.setTsCode(entity.getTsCode());
     dto.setTradeDate(entity.getTradeDate());
@@ -732,15 +1123,35 @@ public class StockServiceImpl implements StockService {
     dto.setClose(entity.getClose());
     dto.setPctChg(entity.getPctChg());
     dto.setVol(entity.getVol());
-
-    // 五日调整分析中保留原始state值
-    dto.setState(entity.getState());
-
-    dto.setAmount(entity.getAmount());
+    
+    // 根据分析类型选择对应的状态字段，并将Integer转换为BigDecimal
+    switch (stateType) {
+      case "macd_golden_state":
+        dto.setState(entity.getMacdGoldenState() != null ? new BigDecimal(entity.getMacdGoldenState()) : BigDecimal.ZERO);
+        break;
+      case "kdj_gloden_state":
+        dto.setState(entity.getKdjGlodenState() != null ? new BigDecimal(entity.getKdjGlodenState()) : BigDecimal.ZERO);
+        break;
+      case "low_price_state":
+        dto.setState(entity.getLowPriceState() != null ? new BigDecimal(entity.getLowPriceState()) : BigDecimal.ZERO);
+        break;
+      case "high_level_state":
+        dto.setState(entity.getHighLevelState() != null ? new BigDecimal(entity.getHighLevelState()) : BigDecimal.ZERO);
+        break;
+      default:
+        dto.setState(entity.getState());
+        break;
+    }
+    
     dto.setMa120(entity.getMa120());
     dto.setMa250(entity.getMa250());
     dto.setName(entity.getName());
     return dto;
+  }
+
+  // 修改原有方法，兼容新的转换逻辑
+  private StockResponse.StockData convertToDtoForAnalysis(StockData entity) {
+    return convertToDtoForAnalysis(entity, "state");
   }
 
   /**

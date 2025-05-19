@@ -82,7 +82,7 @@ public class StockController {
   /**
    * 分析接口，用于各种分析模型
    * 
-   * @param type      分析类型：1-五日调整分析
+   * @param type      分析类型：1-五日调整分析, 2-MACD金叉, 3-KDJ金叉, 4-低位资金净流入, 5-高位资金净流出
    * @param tsCode    股票代码
    * @param tradeDate 交易日期
    * @param pageNum   页码
@@ -100,6 +100,14 @@ public class StockController {
     switch (type) {
       case 1: // 五日调整分析
         return stockService.getFiveDayAdjustment(tsCode, tradeDate, pageNum);
+      case 2: // MACD金叉分析
+        return stockService.getMacdGoldenCross(tsCode, tradeDate, pageNum);
+      case 3: // KDJ金叉分析
+        return stockService.getKdjGoldenCross(tsCode, tradeDate, pageNum);
+      case 4: // 低位资金净流入分析
+        return stockService.getLowPriceInflow(tsCode, tradeDate, pageNum);
+      case 5: // 高位资金净流出分析
+        return stockService.getHighLevelOutflow(tsCode, tradeDate, pageNum);
       default:
         throw new IllegalArgumentException("不支持的分析类型: " + type);
     }
