@@ -137,7 +137,8 @@ public interface StockDataMapper extends BaseMapper<StockData> {
       @Param("pageSize") int pageSize, @Param("offset") int offset);
 
   /**
-   * 查询强于大盘的股票数据（斜率大于大盘斜率的股票）
+   * 查询强于大盘的股票数据
+   * 使用pre-computed slope字段，查询斜率高于大盘斜率的股票
    * 
    * @param tsCode    股票代码，可选过滤条件
    * @param startDate 查询日期
@@ -145,8 +146,11 @@ public interface StockDataMapper extends BaseMapper<StockData> {
    * @param offset    偏移量（用于分页）
    * @return 强于大盘的股票数据列表
    */
-  List<StockData> findOutperformData(@Param("tsCode") String tsCode, @Param("startDate") String startDate,
-      @Param("pageSize") int pageSize, @Param("offset") int offset);
+  List<StockData> findOutperformData(
+      @Param("tsCode") String tsCode,
+      @Param("startDate") String startDate,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
 
   /**
    * 统计符合半年线条件的股票数量
@@ -176,7 +180,8 @@ public interface StockDataMapper extends BaseMapper<StockData> {
   Long countOutperformStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
 
   /**
-   * 查询弱于大盘的股票数据（斜率小于大盘斜率的股票）
+   * 查询弱于大盘的股票数据
+   * 使用pre-computed slope字段，查询斜率低于大盘斜率的股票
    * 
    * @param tsCode    股票代码，可选过滤条件
    * @param startDate 查询日期
@@ -201,18 +206,20 @@ public interface StockDataMapper extends BaseMapper<StockData> {
 
   /**
    * 获取指定股票在指定日期的斜率
+   * 从all_stocks_days表中获取预先计算好的斜率值
    * 
    * @param tsCode    股票代码
    * @param tradeDate 交易日期
-   * @return 股票斜率，表示股价的趋势
+   * @return 股票斜率
    */
   Double findStockSlope(String tsCode, String tradeDate);
 
   /**
    * 获取指定日期的市场斜率（上证指数）
+   * 从shangzheng表中获取预先计算好的斜率值
    * 
    * @param tradeDate 交易日期
-   * @return 市场斜率，表示大盘的趋势
+   * @return 市场斜率
    */
   Double findMarketSlope(String tradeDate);
 

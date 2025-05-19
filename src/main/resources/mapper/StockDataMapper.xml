@@ -370,10 +370,7 @@
     <!-- 
         查询强于大盘的股票数据
         强于大盘定义为股票斜率大于上证指数斜率的股票
-        1. 实时计算股票斜率，不再依赖stock_slope表
-        2. 与上证指数的斜率进行比较
-        3. 使用前后41个交易日构建日期区间
-        4. 返回符合条件的股票在日期区间内的全部交易数据
+        使用all_stocks_days表中的斜率字段，按斜率降序排序
      -->
     <select id="findOutperformData" resultType="com.example.stock.entity.StockData">
         WITH market_slope AS (
@@ -382,60 +379,36 @@
             WHERE trade_date = #{startDate}
             LIMIT 1
         ),
-        -- 预先获取所有股票代码，减少后续重复查询
-        all_stocks AS (
-            SELECT 
-                a.ts_code,
-                a.close,
-                a.trade_date,
-                (
-                    SELECT fp.close
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_close,
-                (
-                    SELECT fp.trade_date
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_date
-            FROM all_stocks_days a
+        outperform_stocks AS (
+            SELECT a.ts_code, a.slope
+            FROM all_stocks_days a, market_slope m
             WHERE a.trade_date = #{startDate}
             <if test="tsCode != null">
                 AND a.ts_code = #{tsCode}
             </if>
-        ),
-        -- 计算斜率，简化计算逻辑并提高性能
-        slopes AS (
-            SELECT 
-                s.ts_code,
-                CASE
-                    WHEN s.prev_close IS NOT NULL THEN
-                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
-                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
-                    ELSE 0
-                END AS stock_slope
-            FROM all_stocks s
-        ),
-        -- 筛选强于大盘的股票
-        outperform_stocks AS (
-            SELECT s.ts_code
-            FROM slopes s, market_slope m
-            WHERE s.stock_slope &gt; m.slope
+            AND a.slope &gt; m.slope
+            ORDER BY a.slope DESC
             LIMIT #{pageSize} OFFSET #{offset}
         ),
-        -- 获取日期范围
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
         date_range AS (
-            SELECT
-                (SELECT DATE_SUB(#{startDate}, INTERVAL 40 DAY)) AS start_date,
-                (SELECT DATE_ADD(#{startDate}, INTERVAL 40 DAY)) AS end_date
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
-        -- 获取符合条件的所有数据
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
                a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
@@ -449,7 +422,7 @@
 
     <!-- 
         统计强于大盘的股票数量
-        使用实时计算的斜率进行比较
+        使用主表中的slope字段与上证指数slope比较
      -->
     <select id="countOutperformStocks" resultType="java.lang.Long">
         WITH market_slope AS (
@@ -457,57 +430,20 @@
             FROM shangzheng
             WHERE trade_date = #{startDate}
             LIMIT 1
-        ),
-        all_stocks AS (
-            SELECT 
-                a.ts_code,
-                a.close,
-                a.trade_date,
-                (
-                    SELECT fp.close
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_close,
-                (
-                    SELECT fp.trade_date
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_date
-            FROM all_stocks_days a
-            WHERE a.trade_date = #{startDate}
-            <if test="tsCode != null">
-                AND a.ts_code = #{tsCode}
-            </if>
-        ),
-        slopes AS (
-            SELECT 
-                s.ts_code,
-                CASE
-                    WHEN s.prev_close IS NOT NULL THEN
-                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
-                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
-                    ELSE 0
-                END AS stock_slope
-            FROM all_stocks s
         )
         SELECT COUNT(*)
-        FROM slopes s, market_slope m
-        WHERE s.stock_slope &gt; m.slope
+        FROM all_stocks_days a, market_slope m
+        WHERE a.trade_date = #{startDate}
+        <if test="tsCode != null">
+            AND a.ts_code = #{tsCode}
+        </if>
+        AND a.slope &gt; m.slope
     </select>
 
     <!-- 
         弱于大盘股票数据查询
         弱于大盘定义为股票斜率小于上证指数斜率的股票
-        1. 实时计算股票斜率，不再依赖stock_slope表
-        2. 与上证指数的斜率进行比较
-        3. 使用前后41个交易日构建日期区间
-        4. 返回符合条件的股票在日期区间内的全部交易数据
+        使用all_stocks_days表中的斜率字段，按斜率升序排序
      -->
     <select id="findUnderperformData" resultType="com.example.stock.entity.StockData">
         WITH market_slope AS (
@@ -516,60 +452,36 @@
             WHERE trade_date = #{startDate}
             LIMIT 1
         ),
-        -- 预先获取所有股票代码，减少后续重复查询
-        all_stocks AS (
-            SELECT 
-                a.ts_code,
-                a.close,
-                a.trade_date,
-                (
-                    SELECT fp.close
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_close,
-                (
-                    SELECT fp.trade_date
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_date
-            FROM all_stocks_days a
+        underperform_stocks AS (
+            SELECT a.ts_code, a.slope
+            FROM all_stocks_days a, market_slope m
             WHERE a.trade_date = #{startDate}
             <if test="tsCode != null">
                 AND a.ts_code = #{tsCode}
             </if>
-        ),
-        -- 计算斜率，简化计算逻辑并提高性能
-        slopes AS (
-            SELECT 
-                s.ts_code,
-                CASE
-                    WHEN s.prev_close IS NOT NULL THEN
-                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
-                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
-                    ELSE 0
-                END AS stock_slope
-            FROM all_stocks s
-        ),
-        -- 筛选弱于大盘的股票
-        underperform_stocks AS (
-            SELECT s.ts_code
-            FROM slopes s, market_slope m
-            WHERE s.stock_slope &lt; m.slope
+            AND a.slope &lt; m.slope
+            ORDER BY a.slope ASC
             LIMIT #{pageSize} OFFSET #{offset}
         ),
-        -- 获取日期范围
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
         date_range AS (
-            SELECT
-                (SELECT DATE_SUB(#{startDate}, INTERVAL 40 DAY)) AS start_date,
-                (SELECT DATE_ADD(#{startDate}, INTERVAL 40 DAY)) AS end_date
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
-        -- 获取符合条件的所有数据
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
                a.amount, a.state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
@@ -583,7 +495,7 @@
 
     <!-- 
         统计弱于大盘的股票数量
-        使用实时计算的斜率进行比较
+        使用主表中的slope字段与上证指数slope比较
      -->
     <select id="countUnderperformStocks" resultType="java.lang.Long">
         WITH market_slope AS (
@@ -591,48 +503,14 @@
             FROM shangzheng
             WHERE trade_date = #{startDate}
             LIMIT 1
-        ),
-        all_stocks AS (
-            SELECT 
-                a.ts_code,
-                a.close,
-                a.trade_date,
-                (
-                    SELECT fp.close
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_close,
-                (
-                    SELECT fp.trade_date
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = a.ts_code AND fp.Fmark IN (0, 1)
-                      AND fp.trade_date &lt; a.trade_date
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_date
-            FROM all_stocks_days a
-            WHERE a.trade_date = #{startDate}
-            <if test="tsCode != null">
-                AND a.ts_code = #{tsCode}
-            </if>
-        ),
-        slopes AS (
-            SELECT 
-                s.ts_code,
-                CASE
-                    WHEN s.prev_close IS NOT NULL THEN
-                        (s.close - s.prev_close) / NULLIF(s.prev_close, 0) * 100 /
-                        NULLIF(DATEDIFF(s.trade_date, s.prev_date), 0)
-                    ELSE 0
-                END AS stock_slope
-            FROM all_stocks s
         )
         SELECT COUNT(*)
-        FROM slopes s, market_slope m
-        WHERE s.stock_slope &lt; m.slope
+        FROM all_stocks_days a, market_slope m
+        WHERE a.trade_date = #{startDate}
+        <if test="tsCode != null">
+            AND a.ts_code = #{tsCode}
+        </if>
+        AND a.slope &lt; m.slope
     </select>
 
     <!-- 
@@ -785,7 +663,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.macd_golden_state as state,
+               a.amount, a.macd_golden_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -833,13 +711,13 @@
     <!-- 
         查询具有KDJ金叉信号的股票数据
         KDJ金叉是指kdj_gloden_state字段等于1的股票
-        1. kdj_golden_stocks: 筛选kdj_gloden_state字段等于1的股票
+        1. kdj_gloden_stocks: 筛选kdj_gloden_state字段等于1的股票
         2. 同样使用前后41个交易日构建日期区间
         3. 返回符合条件的股票在日期区间内的全部交易数据
         4. 注意kdj_gloden_state字段作为信号指标保留原始值
      -->
     <select id="findKdjGoldenCrossStocks" resultType="com.example.stock.entity.StockData">
-        WITH kdj_golden_stocks AS (
+        WITH kdj_gloden_stocks AS (
             SELECT DISTINCT a.ts_code
             FROM all_stocks_days a
             <where>
@@ -872,12 +750,12 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.kdj_gloden_state as state,
+               a.amount, a.kdj_gloden_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
         FROM all_stocks_days a
-        JOIN kdj_golden_stocks ts ON a.ts_code = ts.ts_code
+        JOIN kdj_gloden_stocks ts ON a.ts_code = ts.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
@@ -959,7 +837,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.low_price_state as state,
+               a.amount, a.low_price_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -1046,7 +924,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.high_level_state as state,
+               a.amount, a.high_level_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -1093,72 +971,13 @@
 
     <!-- 
         查询指定股票在指定日期的斜率
-        实时计算特定股票在指定日期的斜率值
-        斜率表示股价的趋势，用于判断股票走势强弱
+        直接从数据库中获取预先计算好的斜率值
      -->
     <select id="findStockSlope" resultType="java.lang.Double">
-        WITH stock_data AS (
-            SELECT 
-                a.close AS current_close,
-                a.trade_date AS curr_date,
-                (
-                    -- 获取前一个Fmark点数据
-                    SELECT fp.close
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = #{tsCode}
-                    AND fp.trade_date &lt; #{tradeDate}
-                    AND fp.Fmark IN (0, 1)
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_close,
-                (
-                    -- 获取前一个Fmark点日期
-                    SELECT fp.trade_date
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = #{tsCode}
-                    AND fp.trade_date &lt; #{tradeDate}
-                    AND fp.Fmark IN (0, 1)
-                    ORDER BY fp.trade_date DESC
-                    LIMIT 1
-                ) AS prev_date,
-                (
-                    -- 如果没有前一个Fmark点，获取最早的日期数据
-                    SELECT fp.close
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = #{tsCode}
-                    AND fp.trade_date &lt; #{tradeDate}
-                    ORDER BY fp.trade_date ASC
-                    LIMIT 1
-                ) AS earliest_close,
-                (
-                    -- 如果没有前一个Fmark点，获取最早的日期
-                    SELECT fp.trade_date
-                    FROM all_stocks_days fp
-                    WHERE fp.ts_code = #{tsCode}
-                    AND fp.trade_date &lt; #{tradeDate}
-                    ORDER BY fp.trade_date ASC
-                    LIMIT 1
-                ) AS earliest_date
-            FROM all_stocks_days a
-            WHERE a.ts_code = #{tsCode}
-            AND a.trade_date = #{tradeDate}
-        )
-        SELECT 
-            CASE 
-                WHEN sd.prev_close IS NOT NULL THEN
-                    (sd.current_close - sd.prev_close) / sd.prev_close / 
-                    (SELECT COUNT(*) FROM all_stocks_days 
-                     WHERE ts_code = #{tsCode} 
-                     AND trade_date &gt; sd.prev_date 
-                     AND trade_date &lt;= sd.curr_date)
-                ELSE
-                    (sd.current_close - sd.earliest_close) / sd.earliest_close / 
-                    (SELECT COUNT(*) FROM all_stocks_days 
-                     WHERE ts_code = #{tsCode} 
-                     AND trade_date &gt;= sd.earliest_date 
-                     AND trade_date &lt;= sd.curr_date)
-            END * 100 AS slope
-        FROM stock_data sd
+        SELECT slope
+        FROM all_stocks_days
+        WHERE ts_code = #{tsCode}
+        AND trade_date = #{tradeDate}
         LIMIT 1
     </select>
 

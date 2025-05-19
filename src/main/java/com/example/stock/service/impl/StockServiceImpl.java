@@ -1,7 +1,6 @@
 package com.example.stock.service.impl;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import com.example.stock.dto.FiveDayAdjustmentResponse;
 import com.example.stock.dto.HighLevelOutflowResponse;
 import com.example.stock.dto.KdjGoldenCrossResponse;
@@ -311,14 +310,14 @@ public class StockServiceImpl implements StockService {
 
   @Override
   public double getStockSlope(String tsCode, String tradeDate) {
-    // 从stock_slope表中查询指定股票在指定日期的斜率
+    // 直接从all_stocks_days表中获取预先计算好的斜率
     Double slope = stockDataMapper.findStockSlope(tsCode, tradeDate);
     return slope != null ? slope : 0.0;
   }
 
   @Override
   public double getMarketSlope(String tradeDate) {
-    // 从shangzheng表中查询指定日期的大盘斜率
+    // 从shangzheng表中获取预先计算的大盘斜率
     Double slope = stockDataMapper.findMarketSlope(tradeDate);
     return slope != null ? slope : 0.0;
   }
@@ -1123,8 +1122,12 @@ public class StockServiceImpl implements StockService {
     dto.setClose(entity.getClose());
     dto.setPctChg(entity.getPctChg());
     dto.setVol(entity.getVol());
+    dto.setAmount(entity.getAmount());
+    dto.setMa120(entity.getMa120());
+    dto.setMa250(entity.getMa250());
+    dto.setName(entity.getName());
     
-    // 根据分析类型选择对应的状态字段，并将Integer转换为BigDecimal
+    // 根据分析类型设置state字段的值
     switch (stateType) {
       case "macd_golden_state":
         dto.setState(entity.getMacdGoldenState() != null ? new BigDecimal(entity.getMacdGoldenState()) : BigDecimal.ZERO);
@@ -1143,9 +1146,6 @@ public class StockServiceImpl implements StockService {
         break;
     }
     
-    dto.setMa120(entity.getMa120());
-    dto.setMa250(entity.getMa250());
-    dto.setName(entity.getName());
     return dto;
   }
 
