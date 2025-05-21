@@ -287,6 +287,42 @@
         </if>
     </select>
 
+    <!--
+        统计指数数量
+        根据参数isLimitUp和isLimitDown动态生成不同的SQL:
+        1. 涨停指数数量
+        2. 跌停指数数量
+        3. 全部指数数量
+     -->
+    <select id="countIndexStocks" resultType="java.lang.Long">
+        <if test="isLimitUp != null and isLimitUp">
+            SELECT COUNT(DISTINCT a.ts_code)
+            FROM `index`  a
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.pct_chg &gt;= 6.0
+        </if>
+        <if test="isLimitDown != null and isLimitDown">
+            SELECT COUNT(DISTINCT a.ts_code)
+            FROM `index`  a
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+            AND a.pct_chg &lt;= -6.0
+        </if>
+        <if test="isLimitUp == null and isLimitDown == null">
+            SELECT COUNT(DISTINCT a.ts_code)
+            FROM `index`  a
+            WHERE a.trade_date = #{startDate}
+            <if test="tsCode != null">
+                AND a.ts_code = #{tsCode}
+            </if>
+        </if>
+    </select>
+
     <!-- 
         查询半年线股票数据
         半年线定义为收盘价大于120日均线的股票
