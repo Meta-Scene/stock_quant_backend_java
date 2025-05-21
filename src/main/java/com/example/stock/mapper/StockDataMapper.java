@@ -31,6 +31,23 @@ public interface StockDataMapper extends BaseMapper<StockData> {
       @Param("offset") int offset);
 
   /**
+   * 根据日期范围查询指数股票数据
+   *
+   * @param tsCode    股票代码，可选过滤条件
+   * @param startDate 开始日期
+   * @param endDate   结束日期
+   * @param pageSize  每页数量
+   * @param offset    偏移量（用于分页）
+   * @return 符合条件的股票数据列表
+   */
+  List<StockData> findIndexByDateRange(
+          @Param("tsCode") String tsCode,
+          @Param("startDate") String startDate,
+          @Param("endDate") String endDate,
+          @Param("pageSize") int pageSize,
+          @Param("offset") int offset);
+
+  /**
    * 查询涨停股票数据
    * 
    * @param tsCode    股票代码，可选过滤条件

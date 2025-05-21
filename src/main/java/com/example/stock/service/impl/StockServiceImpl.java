@@ -121,6 +121,45 @@ public class StockServiceImpl implements StockService {
   }
 
   @Override
+  public StockResponse getAllIndexData(String tsCode, String tradeDate, Integer pageNum) {
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+
+    if (targetDate == null || targetDate.isEmpty()) {
+      targetDate = stockDataMapper.findMaxDate();
+    }
+
+    int offset = (pageNum != null ? pageNum - 1 : 0) * pageSize;
+
+    // 严格使用指定日期查询，SQL会自动计算前后20个交易日的范围
+    List<StockData> stockList = stockDataMapper.findIndexByDateRange(
+            tsCode,
+            targetDate,
+            null, // 不需要显式传递endDate，SQL会自动计算
+            pageSize,
+            offset);
+
+    Long totalCount = stockDataMapper.countStocks(tsCode, targetDate, null, null, null);
+
+    // 如果没有数据，返回一个空响应
+    if (stockList.isEmpty()) {
+      return buildEmptyResponse(targetDate, pageNum, tradeDate);
+    }
+
+    // 从查询结果中获取实际的日期范围
+    String startDate = stockList.stream()
+            .map(StockData::getTradeDate)
+            .min(String::compareTo)
+            .orElse(targetDate);
+    String endDate = stockList.stream()
+            .map(StockData::getTradeDate)
+            .max(String::compareTo)
+            .orElse(targetDate);
+
+    return buildResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate);
+  }
+
+  @Override
   public StockResponse getLimitDownData(String tsCode, String tradeDate, Integer pageNum) {
     // 使用传入的日期或获取最新日期
     String targetDate = tradeDate;

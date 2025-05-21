@@ -51,6 +51,56 @@
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
 
+    <!--
+        根据日期范围查询指数数据
+        使用CTE(Common Table Expressions)实现复杂查询：
+        1. stock_codes: 获取指定日期的股票代码，支持分页
+        2. prev_dates: 获取指定日期前的交易日(最多41天)
+        3. next_dates: 获取指定日期后的交易日(最多41天)
+        4. date_range: 确定最终的日期范围
+        最后连接这些临时表获取完整的股票数据
+    -->
+    <select id="findIndexByDateRange" resultType="com.example.stock.entity.StockData">
+        WITH stock_codes AS (
+        SELECT DISTINCT i.ts_code
+        FROM `index` i
+        WHERE i.trade_date = #{startDate}
+        <if test="tsCode != null">
+            AND i.ts_code = #{tsCode}
+        </if>
+        ORDER BY i.ts_code
+        LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+        SELECT DISTINCT trade_date
+        FROM `index`
+        WHERE trade_date &lt;= #{startDate}
+        ORDER BY trade_date DESC
+        LIMIT 41
+        ),
+        next_dates AS (
+        SELECT DISTINCT trade_date
+        FROM `index`
+        WHERE trade_date >= #{startDate}
+        ORDER BY trade_date ASC
+        LIMIT 41
+        ),
+        date_range AS (
+        SELECT
+        (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+        (SELECT MAX(trade_date) FROM next_dates) AS end_date
+        )
+        SELECT i.id, i.ts_code, i.trade_date, i.open, i.high, i.low, i.close, i.pct_chg, i.vol,
+        i.amount,
+--         COALESCE(NULLIF(i.ma120, 'NaN'), NULL) as ma120,
+--         COALESCE(NULLIF(i.ma250, 'NaN'), NULL) as ma250,
+        i.name
+        FROM `index` i
+        JOIN stock_codes s ON i.ts_code = s.ts_code
+        JOIN date_range d ON i.trade_date BETWEEN d.start_date AND d.end_date
+        ORDER BY i.ts_code, i.trade_date ASC
+    </select>
+
     <!-- 
         查询涨停股票数据 
         涨停标准为涨幅大于等于6.0%

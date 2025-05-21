@@ -27,6 +27,16 @@ public interface StockService {
   StockResponse getAllData(String tsCode, String tradeDate, Integer pageNum);
 
   /**
+   * 获取所有指数数据
+   *
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 股票数据响应
+   */
+  StockResponse getAllIndexData(String tsCode, String tradeDate, Integer pageNum);
+
+  /**
    * 获取涨停股票数据
    * 
    * @param tsCode    股票代码

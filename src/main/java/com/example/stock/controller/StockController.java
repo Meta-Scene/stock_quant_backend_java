@@ -37,8 +37,9 @@ public class StockController {
 
     // 根据类型参数调用不同的服务方法
     switch (type) {
-      case 1: // 全部数据
-        return stockService.getAllData(tsCode, tradeDate, pageNum);
+      case 1: // 全部数据 修改为获取全部指数数据
+//        return stockService.getAllData(tsCode, tradeDate, pageNum);
+        return stockService.getAllIndexData(tsCode,tradeDate,pageNum);
       case 2: // 涨停数据
         return stockService.getLimitUpData(tsCode, tradeDate, pageNum);
       case 3: // 跌停数据
