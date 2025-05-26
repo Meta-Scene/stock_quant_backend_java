@@ -130,50 +130,22 @@ public class CollectServiceImpl implements CollectService {
         
         // 获取数据库中的收藏列表
         List<String> dbStocks = collectMapper.findAllTsCodes();
-        Set<String> redisStocks = redisTemplate.opsForZSet().range(COLLECT_KEY, 0, -1);
         
-        // 如果Redis为空，直接将数据库数据同步到Redis
-        if (redisStocks == null || redisStocks.isEmpty()) {
-            if (dbStocks != null && !dbStocks.isEmpty()) {
-                for (int i = 0; i < dbStocks.size(); i++) {
-                    redisTemplate.opsForZSet().add(COLLECT_KEY, dbStocks.get(i), i);
-                }
-            }
-            log.info("数据库数据已同步到Redis，共{}条", dbStocks != null ? dbStocks.size() : 0);
-            return;
-        }
+        // 清空Redis中的数据
+        redisTemplate.delete(COLLECT_KEY);
         
-        // 如果数据库为空，将Redis数据同步到数据库
+        // 如果数据库为空，则不做任何操作
         if (dbStocks == null || dbStocks.isEmpty()) {
-            for (String tsCode : redisStocks) {
-                Collect collect = new Collect();
-                collect.setTsCode(tsCode);
-                collectMapper.insert(collect);
-            }
-            log.info("Redis数据已同步到数据库，共{}条", redisStocks.size());
+            log.info("数据库中没有收藏数据，无需同步");
             return;
         }
         
-        // 双向同步：确保Redis和数据库数据一致
-        // 将Redis中有但数据库中没有的添加到数据库
-        for (String tsCode : redisStocks) {
-            if (!dbStocks.contains(tsCode)) {
-                Collect collect = new Collect();
-                collect.setTsCode(tsCode);
-                collectMapper.insert(collect);
-                log.info("将Redis中的股票{}添加到数据库", tsCode);
-            }
-        }
-        
-        // 将数据库中有但Redis中没有的添加到Redis
+        // 将数据库数据同步到Redis
         for (int i = 0; i < dbStocks.size(); i++) {
-            String tsCode = dbStocks.get(i);
-            if (!redisStocks.contains(tsCode)) {
-                redisTemplate.opsForZSet().add(COLLECT_KEY, tsCode, i);
-                log.info("将数据库中的股票{}添加到Redis", tsCode);
-            }
+            // 使用索引作为分数，保持顺序
+            redisTemplate.opsForZSet().add(COLLECT_KEY, dbStocks.get(i), i);
         }
         
-        log.info("收藏数据同步完成");
+        log.info("数据库数据已同步到Redis，共{}条", dbStocks.size());
     }
 } 

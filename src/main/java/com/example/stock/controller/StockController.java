@@ -120,11 +120,25 @@ public class StockController {
   }
 
   @ApiOperation("查询自选股数据")
-  @GetMapping("/stock_favorites")
+  @GetMapping("/stock_big_data_analysis/{type}")
   public StockResponse getFavoriteStocksData(
+      @PathVariable(name = "type") Integer type,
       @RequestParam(name = "trade_date", required = false) String tradeDate,
       @RequestParam(name = "page", required = false, defaultValue = "1") Integer pageNum) {
-      return stockService.getFavoriteStocksData(tradeDate, pageNum);
+      
+      // 根据类型参数调用不同的服务方法
+      switch (type) {
+          case 1: // 暂时保留空的case
+              throw new IllegalArgumentException("暂不支持的查询类型: " + type);
+          case 2: // 暂时保留空的case
+              throw new IllegalArgumentException("暂不支持的查询类型: " + type);
+          case 3: // 暂时保留空的case
+              throw new IllegalArgumentException("暂不支持的查询类型: " + type);
+          case 4: // 自选股数据
+              return stockService.getFavoriteStocksData(tradeDate, pageNum);
+          default:
+              throw new IllegalArgumentException("不支持的查询类型: " + type);
+      }
   }
 
 }

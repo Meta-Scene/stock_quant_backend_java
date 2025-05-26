@@ -41,7 +41,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -143,7 +143,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -195,7 +195,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -364,7 +364,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -415,7 +415,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -496,7 +496,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -569,7 +569,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -616,7 +616,7 @@
                     a.ts_code = #{tsCode} AND
                 </if>
                 a.trade_date = #{startDate}
-                AND a.state = 1 -- 使用state字段大于0作为买入点判断
+                AND a.five_days_state = 1 -- 使用state字段大于0作为买入点判断
             </where>
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
@@ -641,7 +641,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
@@ -664,7 +664,7 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.state = 1 -- 使用state字段大于0作为买入点判断
+            AND a.five_days_state = 1 -- 使用state字段大于0作为买入点判断
         </where>
         ORDER BY a.ts_code
     </select>
@@ -682,7 +682,7 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.state = 1 -- 使用state字段大于0作为买入点判断
+            AND a.five_days_state = 1 -- 使用state字段大于0作为买入点判断
         </where>
     </select>
     <select id="getSingleStockData" resultType="com.example.stock.entity.StockData">
@@ -697,7 +697,7 @@
             pct_chg,
             vol,
             amount,
-            state,
+            five_days_state,
             Fmark,
             COALESCE(NULLIF(ma120, 'NaN'), NULL) as ma120,
             COALESCE(NULLIF(ma250, 'NaN'), NULL) as ma250,
@@ -796,14 +796,14 @@
     
     <!-- 
         查询具有KDJ金叉信号的股票数据
-        KDJ金叉是指kdj_gloden_state字段等于1的股票
-        1. kdj_gloden_stocks: 筛选kdj_gloden_state字段等于1的股票
+        KDJ金叉是指kdj_golden_state字段等于1的股票
+        1. kdj_golden_stocks: 筛选kdj_golden_state字段等于1的股票
         2. 同样使用前后41个交易日构建日期区间
         3. 返回符合条件的股票在日期区间内的全部交易数据
-        4. 注意kdj_gloden_state字段作为信号指标保留原始值
+        4. 注意kdj_golden_state字段作为信号指标保留原始值
      -->
     <select id="findKdjGoldenCrossStocks" resultType="com.example.stock.entity.StockData">
-        WITH kdj_gloden_stocks AS (
+        WITH kdj_golden_stocks AS (
             SELECT DISTINCT a.ts_code
             FROM all_stocks_days a
             <where>
@@ -811,7 +811,7 @@
                     a.ts_code = #{tsCode} AND
                 </if>
                 a.trade_date = #{startDate}
-                AND a.kdj_gloden_state = 1 -- 使用kdj_gloden_state字段等于1作为信号判断
+                AND a.kdj_golden_state = 1 -- 使用kdj_golden_state字段等于1作为信号判断
             </where>
             ORDER BY a.ts_code
             LIMIT #{pageSize} OFFSET #{offset}
@@ -836,19 +836,19 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.kdj_gloden_state,
+               a.amount, a.kdj_golden_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name
         FROM all_stocks_days a
-        JOIN kdj_gloden_stocks ts ON a.ts_code = ts.ts_code
+        JOIN kdj_golden_stocks ts ON a.ts_code = ts.ts_code
         JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
         ORDER BY a.ts_code, a.trade_date ASC
     </select>
 
     <!-- 
         获取具有KDJ金叉信号的股票代码列表
-        返回在指定日期kdj_gloden_state字段等于1的所有股票代码
+        返回在指定日期kdj_golden_state字段等于1的所有股票代码
         用于前端展示和统计
      -->
     <select id="findKdjGoldenCrossTsCodes" resultType="java.lang.String">
@@ -859,14 +859,14 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.kdj_gloden_state = 1 -- 使用kdj_gloden_state字段等于1作为信号判断
+            AND a.kdj_golden_state = 1 -- 使用kdj_golden_state字段等于1作为信号判断
         </where>
         ORDER BY a.ts_code
     </select>
 
     <!-- 
         统计具有KDJ金叉信号的股票数量
-        计算在指定日期kdj_gloden_state字段等于1的股票数量
+        计算在指定日期kdj_golden_state字段等于1的股票数量
         用于分页和统计展示
      -->
     <select id="countKdjGoldenCrossStocks" resultType="java.lang.Long">
@@ -877,7 +877,7 @@
             <if test="tsCode != null and tsCode != ''">
                 AND a.ts_code = #{tsCode}
             </if>
-            AND a.kdj_gloden_state = 1 -- 使用kdj_gloden_state字段等于1作为信号判断
+            AND a.kdj_golden_state = 1 -- 使用kdj_golden_state字段等于1作为信号判断
         </where>
     </select>
     
@@ -1112,7 +1112,7 @@
                 (SELECT MAX(trade_date) FROM next_dates) AS end_date
         )
         SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
-               a.amount, a.state,
+               a.amount, a.five_days_state,
                COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
                COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
                a.name

@@ -625,7 +625,7 @@ public class StockServiceImpl implements StockService {
   /**
    * 获取KDJ金叉分析数据
    * KDJ金叉是技术分析中另一种重要的买入信号，指K线上穿D线形成的交叉
-   * 通过kdj_gloden_state字段识别具有KDJ金叉信号的股票
+   * 通过kdj_golden_state字段识别具有KDJ金叉信号的股票
    * 
    * 实现步骤：
    * 1. 处理传入参数，确定查询日期和分页参数
@@ -662,7 +662,7 @@ public class StockServiceImpl implements StockService {
     // 创建响应对象
     KdjGoldenCrossResponse response = new KdjGoldenCrossResponse();
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "kdj_gloden_state",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol", "kdj_golden_state",
         "ma120", "ma250", "name"));
     response.setDate(targetDate);
     response.setPage(page);
@@ -690,7 +690,7 @@ public class StockServiceImpl implements StockService {
 
     // 将股票数据按照股票代码分组，使用专门的转换方法
     Map<String, List<StockResponse.StockData>> groupedDataByStock = stockList.stream()
-        .map(entity -> convertToDtoForAnalysis(entity, "kdj_gloden_state")) // 传递kdj_gloden_state标识
+        .map(entity -> convertToDtoForAnalysis(entity, "kdj_golden_state")) // 传递kdj_golden_state标识
         .collect(Collectors.groupingBy(StockResponse.StockData::getTsCode));
 
     // 获取特定日期的数据用于排序（股票代码已在SQL中按排序）
@@ -1179,8 +1179,8 @@ public class StockServiceImpl implements StockService {
       case "macd_golden_state":
         dto.setState(entity.getMacdGoldenState() != null ? new BigDecimal(entity.getMacdGoldenState()) : BigDecimal.ZERO);
         break;
-      case "kdj_gloden_state":
-        dto.setState(entity.getKdjGlodenState() != null ? new BigDecimal(entity.getKdjGlodenState()) : BigDecimal.ZERO);
+      case "kdj_golden_state":
+        dto.setState(entity.getKdjGoldenState() != null ? new BigDecimal(entity.getKdjGoldenState()) : BigDecimal.ZERO);
         break;
       case "low_price_state":
         dto.setState(entity.getLowPriceState() != null ? new BigDecimal(entity.getLowPriceState()) : BigDecimal.ZERO);
