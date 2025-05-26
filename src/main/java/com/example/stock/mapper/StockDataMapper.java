@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.stock.entity.StockData;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
 import java.util.List;
 
 /**
@@ -420,4 +422,27 @@ public interface StockDataMapper extends BaseMapper<StockData> {
    * @return 有高位资金净流出信号的股票数量
    */
   Long countHighLevelOutflowStocks(@Param("tsCode") String tsCode, @Param("startDate") String startDate);
+
+  /**
+   * 查询是否有对应的tsCode
+   */
+  @Select("SELECT EXISTS(SELECT 1 FROM all_stocks_days WHERE ts_code = #{tsCode})")
+  boolean isExists(String tsCode);
+  
+  /**
+   * 根据多个股票代码查询股票数据
+   * 
+   * @param tsCodes   股票代码列表
+   * @param startDate 开始日期
+   * @param endDate   结束日期
+   * @param pageSize  每页数量
+   * @param offset    偏移量（用于分页）
+   * @return 符合条件的股票数据列表
+   */
+  List<StockData> findByTsCodes(
+      @Param("tsCodes") List<String> tsCodes,
+      @Param("startDate") String startDate,
+      @Param("endDate") String endDate,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
 }

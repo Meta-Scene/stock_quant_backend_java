@@ -7,6 +7,18 @@ spring:
     username: root
     password: YIJINGKEJI1234
     driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: 120.27.208.55
+    port: 10006
+    password: YIJINGKEJI1234
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 8
+        min-idle: 0
   jpa:
     hibernate:
       ddl-auto: validate

@@ -1,6 +1,5 @@
 package com.example.stock.controller;
 
-import com.example.stock.dto.FiveDayAdjustmentResponse;
 import com.example.stock.dto.SingleStockResponse;
 import com.example.stock.dto.StockResponse;
 import com.example.stock.service.StockService;
@@ -118,6 +117,14 @@ public class StockController {
   @GetMapping("/stock_single_data")
   public SingleStockResponse getSingleStockData(@RequestParam(name = "ts_code") String tsCode){
       return stockService.getSingleStockData(tsCode);
+  }
+
+  @ApiOperation("查询自选股数据")
+  @GetMapping("/stock_favorites")
+  public StockResponse getFavoriteStocksData(
+      @RequestParam(name = "trade_date", required = false) String tradeDate,
+      @RequestParam(name = "page", required = false, defaultValue = "1") Integer pageNum) {
+      return stockService.getFavoriteStocksData(tradeDate, pageNum);
   }
 
 }

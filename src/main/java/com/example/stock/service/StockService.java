@@ -169,4 +169,20 @@ public interface StockService {
    * @return 高位资金净流出分析数据响应
    */
   HighLevelOutflowResponse getHighLevelOutflow(String tsCode, String tradeDate, Integer pageNum);
+
+  /**
+   * 检查对应ts_code是否存在
+   * @param tsCode
+   * @return
+   */
+  boolean isStockExist(String tsCode);
+  
+  /**
+   * 获取自选股数据
+   * 
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 股票数据响应
+   */
+  StockResponse getFavoriteStocksData(String tradeDate, Integer pageNum);
 }

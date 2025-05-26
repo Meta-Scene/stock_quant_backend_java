@@ -1042,4 +1042,47 @@
         WHERE trade_date = #{tradeDate}
         LIMIT 1
     </select>
+
+    <!-- 添加findByTsCodes方法的SQL实现，放在文件的合适位置 -->
+    <select id="findByTsCodes" resultType="com.example.stock.entity.StockData">
+        WITH favorite_stocks AS (
+            SELECT ts_code
+            FROM all_stocks_days
+            WHERE trade_date = #{startDate}
+            AND ts_code IN
+            <foreach item="item" collection="tsCodes" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+            ORDER BY ts_code
+            LIMIT #{pageSize} OFFSET #{offset}
+        ),
+        prev_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &lt;= #{startDate}
+            ORDER BY trade_date DESC
+            LIMIT 41
+        ),
+        next_dates AS (
+            SELECT DISTINCT trade_date
+            FROM all_stocks_days
+            WHERE trade_date &gt;= #{startDate}
+            ORDER BY trade_date ASC
+            LIMIT 41
+        ),
+        date_range AS (
+            SELECT 
+                (SELECT MIN(trade_date) FROM prev_dates) AS start_date,
+                (SELECT MAX(trade_date) FROM next_dates) AS end_date
+        )
+        SELECT a.id, a.ts_code, a.trade_date, a.open, a.high, a.low, a.close, a.pct_chg, a.vol, 
+               a.amount, a.state,
+               COALESCE(NULLIF(a.ma120, 'NaN'), NULL) as ma120, 
+               COALESCE(NULLIF(a.ma250, 'NaN'), NULL) as ma250,
+               a.name
+        FROM all_stocks_days a
+        JOIN favorite_stocks fs ON a.ts_code = fs.ts_code
+        JOIN date_range d ON a.trade_date BETWEEN d.start_date AND d.end_date
+        ORDER BY a.ts_code, a.trade_date ASC
+    </select>
 </mapper> 

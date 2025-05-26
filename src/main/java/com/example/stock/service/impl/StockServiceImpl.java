@@ -35,6 +35,9 @@ public class StockServiceImpl implements StockService {
   @Value("${stock.page.size}")
   private int pageSize;
 
+  @Autowired
+  private com.example.stock.service.CollectService collectService;
+
   /**
    * 获取所有股票数据
    * 
@@ -897,7 +900,12 @@ public class StockServiceImpl implements StockService {
 
     return response;
   }
-  
+
+  @Override
+  public boolean isStockExist(String tsCode) {
+      return stockDataMapper.isExists(tsCode);
+  }
+
   /**
    * 获取日期范围
    *
@@ -1206,5 +1214,50 @@ public class StockServiceImpl implements StockService {
     response.setStock_count(0);
     response.setGrid_data(new ArrayList<>());
     return response;
+  }
+
+  @Override
+  public StockResponse getFavoriteStocksData(String tradeDate, Integer pageNum) {
+    // 获取收藏的股票列表
+    List<String> favoriteStocks = collectService.getAllCollects();
+    
+    if (favoriteStocks == null || favoriteStocks.isEmpty()) {
+      return buildEmptyResponse(tradeDate, pageNum, tradeDate);
+    }
+    
+    // 使用传入的日期或获取最新日期
+    String targetDate = tradeDate;
+    if (targetDate == null || targetDate.isEmpty()) {
+      targetDate = stockDataMapper.findMaxDate();
+    }
+    
+    int offset = (pageNum != null ? pageNum - 1 : 0) * pageSize;
+    
+    // 查询收藏股票的数据
+    List<StockData> stockList = stockDataMapper.findByTsCodes(
+        favoriteStocks, 
+        targetDate,
+        null,
+        pageSize,
+        offset);
+    
+    Long totalCount = Long.valueOf(favoriteStocks.size());
+    
+    // 如果没有数据，返回空响应
+    if (stockList.isEmpty()) {
+      return buildEmptyResponse(targetDate, pageNum, tradeDate);
+    }
+    
+    // 从查询结果中获取实际的日期范围
+    String startDate = stockList.stream()
+        .map(StockData::getTradeDate)
+        .min(String::compareTo)
+        .orElse(targetDate);
+    String endDate = stockList.stream()
+        .map(StockData::getTradeDate)
+        .max(String::compareTo)
+        .orElse(targetDate);
+    
+    return buildResponse(stockList, startDate, endDate, totalCount.intValue(), pageNum, tradeDate);
   }
 }
