@@ -132,6 +132,22 @@ public interface StockDataMapper extends BaseMapper<StockData> {
       @Param("isLimitDown") Boolean isLimitDown);
 
   /**
+   * 统计符合条件的指数数量
+   *
+   * @param tsCode      股票代码，可选过滤条件
+   * @param startDate   开始日期
+   * @param endDate     结束日期
+   * @param isLimitUp   是否为涨停，可选过滤条件
+   * @param isLimitDown 是否为跌停，可选过滤条件
+   * @return 符合条件的指数数量
+   */
+  Long countIndexStocks(@Param("tsCode") String tsCode,
+                   @Param("startDate") String startDate,
+                   @Param("endDate") String endDate,
+                   @Param("isLimitUp") Boolean isLimitUp,
+                   @Param("isLimitDown") Boolean isLimitDown);
+
+  /**
    * 查询半年线股票数据（价格接近120日均线的股票）
    * 
    * @param tsCode    股票代码，可选过滤条件

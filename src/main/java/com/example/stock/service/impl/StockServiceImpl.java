@@ -142,7 +142,7 @@ public class StockServiceImpl implements StockService {
             pageSize,
             offset);
 
-    Long totalCount = stockDataMapper.countStocks(tsCode, targetDate, null, null, null);
+    Long totalCount = stockDataMapper.countIndexStocks(tsCode, targetDate, null, null, null);
 
     // 如果没有数据，返回一个空响应
     if (stockList.isEmpty()) {
