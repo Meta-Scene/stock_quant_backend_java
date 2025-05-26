@@ -1216,7 +1216,7 @@ public class StockServiceImpl implements StockService {
     return response;
   }
 
-  @Override
+
   public StockResponse getFavoriteStocksData(String tradeDate, Integer pageNum) {
     // 获取收藏的股票列表
     List<String> favoriteStocks = collectService.getAllCollects();
