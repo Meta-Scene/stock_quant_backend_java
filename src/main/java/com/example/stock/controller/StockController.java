@@ -36,6 +36,8 @@ public class StockController {
 
     // 根据类型参数调用不同的服务方法
     switch (type) {
+      case 0: // 添加对type=0的处理
+        return stockService.getAllIndexData(tsCode, tradeDate, pageNum); // 默认与type=1相同处理
       case 1: // 全部数据 修改为获取全部指数数据
 //        return stockService.getAllData(tsCode, tradeDate, pageNum);
         return stockService.getAllIndexData(tsCode,tradeDate,pageNum);

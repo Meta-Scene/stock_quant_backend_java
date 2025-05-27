@@ -462,7 +462,7 @@ public class StockServiceImpl implements StockService {
 
     // 设置列名
     response.setColumn_names(Arrays.asList(
-        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol",  "state",
+        "ts_code", "trade_date", "open", "high", "low", "close", "pct_chg", "vol",  "fiveDaysState",
         "fmark", "ma120", "ma250", "name"));
 
     // 创建外层List
@@ -505,7 +505,7 @@ public class StockServiceImpl implements StockService {
           stockData.getClose(),
           stockData.getPctChg(),
           stockData.getVol(),
-          stockData.getState(),
+          stockData.getFiveDaysState(),
           fmarkValue, // 处理后的Fmark值
           stockData.getMa120(),
           stockData.getMa250(),

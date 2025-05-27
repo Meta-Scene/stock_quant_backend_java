@@ -22,6 +22,7 @@ public class StockData {
   private BigDecimal vol;
   private BigDecimal amount;
   private BigDecimal state;
+  private Integer fiveDaysState;
   private Integer macdGoldenState; // MACD金叉状态
   private Integer kdjGoldenState;  // KDJ金叉状态
   private Integer lowPriceState;   // 低位资金净流入状态
