@@ -60,7 +60,7 @@ public class StockController {
 
   /**
    * 获取指定日期和股票的斜率数据
-   * 
+   *
    * @param ts_code    股票代码
    * @param trade_date 交易日期
    * @return 斜率数据
@@ -83,8 +83,8 @@ public class StockController {
 
   /**
    * 分析接口，用于各种分析模型
-   * 
-   * @param type      分析类型：1-五日调整分析, 2-MACD金叉, 3-KDJ金叉, 4-低位资金净流入, 5-高位资金净流出
+   *
+   * @param type      分析类型：1-五日调整分析, 2-MACD金叉, 3-KDJ金叉, 4-低位资金净流入, 5-高位资金净流出, 6-连涨放量
    * @param tsCode    股票代码
    * @param tradeDate 交易日期
    * @param pageNum   页码
@@ -110,15 +110,40 @@ public class StockController {
         return stockService.getLowPriceInflow(tsCode, tradeDate, pageNum);
       case 5: // 高位资金净流出分析
         return stockService.getHighLevelOutflow(tsCode, tradeDate, pageNum);
+      case 6: // 连涨放量分析
+        return stockService.getRisingVolume(tsCode, tradeDate, pageNum);
       default:
         throw new IllegalArgumentException("不支持的分析类型: " + type);
     }
   }
 
+    /**
+     * 获取单一股票数据，指定状态
+     *
+     * @param type      分析类型：1-五日调整分析, 2-MACD金叉, 3-KDJ金叉, 4-低位资金净流入, 5-高位资金净流出, 6-连涨放量
+     * @param tsCode    股票代码
+     * @return 单只股票数据（包含策略分析state）
+     */
   @ApiOperation("查询单只股票数据")
-  @GetMapping("/stock_single_data")
-  public SingleStockResponse getSingleStockData(@RequestParam(name = "ts_code") String tsCode){
-      return stockService.getSingleStockData(tsCode);
+  @GetMapping("/stock_single_data/{type}")
+  public SingleStockResponse getSingleStockData(@PathVariable(name = "type") Integer type,@RequestParam(name = "ts_code") String tsCode){
+      // 根据分析类型调用不同的分析方法
+      switch (type) {
+          case 1: // 五日调整分析
+              return stockService.getSingleStockData("five_days_state",tsCode);
+          case 2: // MACD金叉分析
+              return stockService.getSingleStockData("macd_golden_state",tsCode);
+          case 3: // KDJ金叉分析
+              return stockService.getSingleStockData("kdj_golden_state",tsCode);
+          case 4: // 低位资金净流入分析
+              return stockService.getSingleStockData("low_price_state",tsCode);
+          case 5: // 高位资金净流出分析
+              return stockService.getSingleStockData("high_level_state",tsCode);
+          case 6: // 连涨放量分析
+              return stockService.getSingleStockData("rising_volume_state",tsCode);
+          default:
+              throw new IllegalArgumentException("不支持的分析类型: " + type);
+      }
   }
 
   @ApiOperation("查询自选股数据")
@@ -127,7 +152,7 @@ public class StockController {
       @PathVariable(name = "type") Integer type,
       @RequestParam(name = "trade_date", required = false) String tradeDate,
       @RequestParam(name = "page", required = false, defaultValue = "1") Integer pageNum) {
-      
+
       // 根据类型参数调用不同的服务方法
       switch (type) {
           case 1: // 暂时保留空的case
@@ -142,5 +167,4 @@ public class StockController {
               throw new IllegalArgumentException("不支持的查询类型: " + type);
       }
   }
-
 }

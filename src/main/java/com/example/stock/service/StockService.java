@@ -1,14 +1,7 @@
 package com.example.stock.service;
 
-import com.example.stock.dto.SingleStockResponse;
+import com.example.stock.dto.*;
 import org.springframework.stereotype.Service;
-
-import com.example.stock.dto.FiveDayAdjustmentResponse;
-import com.example.stock.dto.StockResponse;
-import com.example.stock.dto.MacdGoldenCrossResponse;
-import com.example.stock.dto.KdjGoldenCrossResponse;
-import com.example.stock.dto.LowPriceInflowResponse;
-import com.example.stock.dto.HighLevelOutflowResponse;
 
 /**
  * 股票数据服务接口
@@ -125,10 +118,12 @@ public interface StockService {
 
   /**
    * 获取单只股票数据
-   * @param tsCode
+   *
+   * @param  stateName 策略状态名
+   * @param tsCode 股票代码
    * @return
    */
-  SingleStockResponse getSingleStockData(String tsCode);
+  SingleStockResponse getSingleStockData(String stateName,String tsCode);
   
   /**
    * 获取MACD金叉分析数据
@@ -169,6 +164,16 @@ public interface StockService {
    * @return 高位资金净流出分析数据响应
    */
   HighLevelOutflowResponse getHighLevelOutflow(String tsCode, String tradeDate, Integer pageNum);
+
+  /**
+   * 获取连涨放量分析数据
+   *
+   * @param tsCode    股票代码
+   * @param tradeDate 交易日期
+   * @param pageNum   页码
+   * @return 连涨放量分析数据响应
+   */
+  RisingVolumeResponse getRisingVolume(String tsCode, String tradeDate, Integer pageNum);
 
   /**
    * 检查对应ts_code是否存在
